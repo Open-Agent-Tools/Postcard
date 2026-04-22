@@ -8,6 +8,12 @@ def test_generate_address_shape():
     assert all(p.isalpha() for p in parts)
 
 
+def test_generate_address_parts_are_distinct():
+    for s in range(50):
+        parts = addressing.generate_address(seed=s).split("-")
+        assert len(set(parts)) == 3
+
+
 def test_generate_address_deterministic():
     assert addressing.generate_address(seed=42) == addressing.generate_address(seed=42)
 
@@ -17,17 +23,16 @@ def test_generate_address_varies():
     assert len(seen) > 5
 
 
-def test_word_lists_are_unique():
-    for bucket in (words.ADJECTIVES_ONE, words.ADJECTIVES_TWO, words.NOUNS):
-        assert len(bucket) == len(set(bucket))
+def test_word_list_is_unique():
+    assert len(words.WORDS) == len(set(words.WORDS))
 
 
-def test_word_lists_are_lowercase_alpha():
-    for bucket in (words.ADJECTIVES_ONE, words.ADJECTIVES_TWO, words.NOUNS):
-        for w in bucket:
-            assert w.isalpha() and w.islower()
+def test_word_list_is_lowercase_alpha():
+    for w in words.WORDS:
+        assert w.isalpha() and w.islower()
 
 
 def test_combination_space_at_least_50k():
-    total = len(words.ADJECTIVES_ONE) * len(words.ADJECTIVES_TWO) * len(words.NOUNS)
+    n = len(words.WORDS)
+    total = n * (n - 1) * (n - 2)
     assert total >= 50_000, f"only {total} combinations"

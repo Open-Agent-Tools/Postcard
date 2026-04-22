@@ -1,4 +1,4 @@
-ADJECTIVES_ONE = [
+WORDS = [
     "sweet", "vivid", "rusty", "brave", "quiet", "swift", "sunny", "misty",
     "bold", "calm", "eager", "gentle", "keen", "lucky", "merry", "quick",
     "lively", "sharp", "bright", "cheerful", "clever", "curious", "daring",
@@ -6,9 +6,6 @@ ADJECTIVES_ONE = [
     "jolly", "kind", "loyal", "mighty", "noble", "patient", "peaceful",
     "polite", "proud", "silent", "sincere", "tender", "thoughtful", "warm",
     "wise", "witty", "zesty", "nimble", "steady", "lucid",
-]
-
-ADJECTIVES_TWO = [
     "blue", "crimson", "golden", "silver", "emerald", "amber", "violet",
     "ivory", "onyx", "coral", "saffron", "jade", "ruby", "pearl", "slate",
     "bronze", "copper", "cobalt", "indigo", "scarlet", "azure", "teal",
@@ -16,9 +13,6 @@ ADJECTIVES_TWO = [
     "olive", "plum", "rose", "tawny", "umber", "vermilion", "cyan", "fuchsia",
     "obsidian", "opal", "quartz", "topaz", "marble", "chrome", "platinum",
     "graphite", "ebony", "flaxen", "russet", "hazel", "carmine",
-]
-
-NOUNS = [
     "coffee", "mountain", "coalition", "logic", "gate", "river", "beacon",
     "harbor", "meadow", "compass", "lantern", "engine", "bridge", "forest",
     "circuit", "anchor", "badge", "canyon", "delta", "ember", "falcon",
