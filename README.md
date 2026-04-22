@@ -2,6 +2,8 @@
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![python: 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](pyproject.toml)
 
+<img width="800" height="436" alt="hero" src="https://github.com/user-attachments/assets/c7b7cbdc-c912-4c9e-9462-74429a80ff1e" />
+
 ## Why postcard
 
 AI agent sessions don't talk to each other. If you're running sperate Claude Code sesisons
