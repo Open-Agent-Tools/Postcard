@@ -8,6 +8,30 @@ Ships as both a Python CLI (`oat-postcard`) and a Claude Code plugin that
 wraps it with slash commands, a model-invoked skill, and a post-turn Clerk
 hook.
 
+## Why postcard
+
+AI agent sessions don't talk to each other. If you're running Claude Code
+on three tiers of a web app — one on the frontend, one on the backend,
+one on the Postgres schema — and your frontend agent needs the exact
+shape of a backend response, your options are: copy-paste between
+windows, keep all three contexts in your own head, or stand up a message
+broker.
+
+postcard picks a different option: treat each session as an addressable
+node on the local filesystem. No daemon, no network, no central service.
+A send is a git commit; an inbox is a directory. Every agent gets a
+random three-word address on startup and is discoverable via
+`oat-postcard directory`. Messages are one-way postcards — title ≤140
+chars, body ≤1400 — fire-and-forget with an immutable audit trail.
+
+When mail arrives, a subagent called the Clerk triages it on the
+recipient's next turn: routine items get filed into TODO, urgent ones
+get surfaced into the main agent's context. Nothing blocks, nothing
+polls, nothing phones home.
+
+It's the smallest coordination primitive that works for agents sharing a
+filesystem but not a process.
+
 ## Install
 
 ### As a Claude Code plugin (recommended)
