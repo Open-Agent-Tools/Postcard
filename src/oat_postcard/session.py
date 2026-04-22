@@ -26,6 +26,9 @@ def current_session_id() -> str:
     sid = os.environ.get("CLAUDE_SESSION_ID") or os.environ.get("OAT_POSTCARD_SESSION")
     if sid:
         return sid
+    sid = _resolve_by_pid_chain()
+    if sid:
+        return sid
     try:
         tty = subprocess.check_output(["tty"], stderr=subprocess.DEVNULL, text=True).strip()
         if tty and tty != "not a tty":
@@ -33,8 +36,41 @@ def current_session_id() -> str:
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
     raise RuntimeError(
-        "no session id: set CLAUDE_SESSION_ID or run from a terminal with a TTY"
+        "no session id: set CLAUDE_SESSION_ID, run from a terminal with a TTY, "
+        "or ensure SessionStart has registered this session in the directory"
     )
+
+
+def _resolve_by_pid_chain(max_hops: int = 20) -> str | None:
+    """Walk up the process tree, find an ancestor PID that matches a live
+    directory entry, and return that entry's session_id. Lets the CLI
+    identify its own session when CLAUDE_SESSION_ID isn't in the env.
+    """
+    try:
+        active = directory.list_active(prune=False)
+    except Exception:
+        return None
+    if not active:
+        return None
+    by_pid = {e.pid: e.session_id for e in active}
+
+    pid = os.getpid()
+    seen: set[int] = set()
+    for _ in range(max_hops):
+        if pid <= 1 or pid in seen:
+            return None
+        seen.add(pid)
+        if pid in by_pid:
+            return by_pid[pid]
+        try:
+            result = subprocess.run(
+                ["ps", "-o", "ppid=", "-p", str(pid)],
+                capture_output=True, text=True, check=True, timeout=2,
+            )
+            pid = int(result.stdout.strip())
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, OSError):
+            return None
+    return None
 
 
 def _sidecar(session_id: str) -> Path:

@@ -1,3 +1,5 @@
+import os
+
 from oat_postcard import directory, session
 
 
@@ -27,3 +29,22 @@ def test_resolve_or_init(tmp_root, session_env):
     addr = session.resolve_or_init()
     assert session.current_address() == addr
     assert session.resolve_or_init() == addr
+
+
+def test_resolve_by_pid_chain_finds_ancestor(tmp_root, monkeypatch):
+    from pathlib import Path
+    directory.register(
+        "pid-chain-addr",
+        session_id="pid-chain-sess",
+        pid=os.getpid(),
+        cwd=Path("/tmp"),
+    )
+    monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
+    monkeypatch.delenv("OAT_POSTCARD_SESSION", raising=False)
+    assert session.current_session_id() == "pid-chain-sess"
+
+
+def test_resolve_by_pid_chain_returns_none_when_no_match(tmp_root, monkeypatch):
+    monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
+    monkeypatch.delenv("OAT_POSTCARD_SESSION", raising=False)
+    assert session._resolve_by_pid_chain() is None
