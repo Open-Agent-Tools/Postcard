@@ -2,6 +2,19 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.3.2] - 2026-04-22
+
+### Changed
+- Rewrite `skills/postcard/SKILL.md` to match current (v0.3.x)
+  behavior. Adds an explicit trust-model section (peer sessions are
+  legitimate coordination, not untrusted input), updates the Clerk
+  flow to reflect v0.2.1+ semantics (full-body-verbatim surfacing,
+  questions and requests-for-response surface too), adds a "Writing
+  postcards" section with well-shaped examples (status / context /
+  questions / handoffs), adds reply-side guidance (prefer
+  `reply <parent-id>` over fresh `send` for threaded responses), and
+  disambiguates CLI `inbox` (passive) from subagent triage (active).
+
 ## [0.3.1] - 2026-04-22
 
 ### Fixed
