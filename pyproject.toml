@@ -1,0 +1,24 @@
+[project]
+name = "oat-postcard"
+version = "0.1.0"
+description = "Asynchronous 1-to-1 postcard messaging between AI agent sessions via a Git-backed ledger."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Open Agent Tools" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+oat-postcard = "oat_postcard.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/oat_postcard"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]

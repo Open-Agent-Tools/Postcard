@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# SessionStart hook: generate this session's 3-word address and register it.
+# Claude Code pipes a JSON payload on stdin with session_id + cwd.
+set -euo pipefail
+
+payload="$(cat)"
+session_id="$(printf '%s' "$payload" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("session_id",""))')"
+cwd="$(printf '%s' "$payload" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cwd",""))')"
+
+args=(--quiet)
+[[ -n "$session_id" ]] && args+=(--session-id "$session_id")
+[[ -n "$cwd" ]] && args+=(--cwd "$cwd")
+
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/src" python3 -m oat_postcard session-init "${args[@]}" >/dev/null 2>&1 || true
