@@ -111,3 +111,22 @@ def test_log_rejects_bad_time_spec(tmp_root, session_env, capsys):
     rc = cli.main(["log", "--since", "not a real duration"])
     assert rc == 2
     assert "invalid time spec" in capsys.readouterr().err
+
+
+def test_send_oversized_body_returns_clean_error(tmp_root, session_env, capsys):
+    session.init_session()
+    big = "x" * (ledger.BODY_MAX + 1)
+    rc = cli.main(["send", "peer", "short title", big])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "body exceeds" in err
+    assert "Traceback" not in err
+
+
+def test_send_oversized_title_returns_clean_error(tmp_root, session_env, capsys):
+    session.init_session()
+    rc = cli.main(["send", "peer", "x" * (ledger.TITLE_MAX + 1), "body"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "title exceeds" in err
+    assert "Traceback" not in err

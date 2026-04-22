@@ -1,6 +1,6 @@
 [project]
 name = "oat-postcard"
-version = "0.3.0"
+version = "0.3.1"
 description = "Asynchronous 1-to-1 postcard messaging between AI agent sessions via a Git-backed ledger."
 readme = "README.md"
 license = { text = "MIT" }

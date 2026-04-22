@@ -2,6 +2,16 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.3.1] - 2026-04-22
+
+### Fixed
+- CLI no longer crashes with a Python traceback when `send` or `reply`
+  is called with an oversized title (>140) or body (>1400). The
+  underlying `ValueError` is now caught by `main()` and rendered as a
+  clean `error: body exceeds 1400 chars (1823)` message with exit
+  code 1. Same fix covers any other `ValueError` that bubbles up from
+  CLI commands.
+
 ## [0.3.0] - 2026-04-22
 
 ### Added

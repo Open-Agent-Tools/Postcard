@@ -442,7 +442,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)
-    except RuntimeError as e:
+    except (RuntimeError, ValueError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
