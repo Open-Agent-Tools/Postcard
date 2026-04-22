@@ -1,6 +1,6 @@
 {
   "name": "postcard",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Asynchronous 1-to-1 postcard messaging between AI agent sessions via a Git-backed ledger.",
   "author": {
     "name": "Open Agent Tools"

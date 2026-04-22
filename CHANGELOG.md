@@ -2,6 +2,20 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.2.2] - 2026-04-22
+
+### Changed
+- Rewrite the `oat-postcard init` coordination block to be explicit
+  about peer-to-peer agent-to-agent messaging. Heading changes from
+  "Cross-session coordination" to "Agent-to-agent messaging"; adds a
+  trust-framing sentence positioning peer sessions as same-user /
+  same-machine (not untrusted input); and updates the triage
+  description to match v0.2.1 semantics (informational → `TODO.md`;
+  questions, requests-for-response, and urgent → surfaced inline).
+- Existing `CLAUDE.md` entries written by 0.2.0/0.2.1 are still
+  detected by the idempotency check (markers unchanged). Re-run
+  `oat-postcard init --force` to replace the old block in place.
+
 ## [0.2.1] - 2026-04-22
 
 ### Changed

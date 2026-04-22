@@ -37,7 +37,7 @@ def test_init_force_replaces_block_content(tmp_path):
     assert result is project.InitResult.REPLACED
     text = target.read_text()
     assert "OLD content" not in text
-    assert "postcard messaging" in text
+    assert "Agent-to-agent messaging" in text
     assert text.count(project.BEGIN_MARKER) == 1
 
 
