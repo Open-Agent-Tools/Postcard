@@ -11,4 +11,4 @@ args=(--quiet)
 [[ -n "$session_id" ]] && args+=(--session-id "$session_id")
 [[ -n "$cwd" ]] && args+=(--cwd "$cwd")
 
-oat-postcard session-init "${args[@]}" >/dev/null 2>&1 || true
+"${CLAUDE_PLUGIN_ROOT}/bin/oat-postcard" session-init "${args[@]}" >/dev/null 2>&1 || true

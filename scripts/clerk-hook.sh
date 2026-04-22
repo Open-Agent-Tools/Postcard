@@ -14,4 +14,4 @@ except Exception: pass
   [[ -n "$session_id" ]] && export CLAUDE_SESSION_ID="$session_id"
 fi
 
-oat-postcard clerk-sweep --quiet >/dev/null 2>&1 || true
+"${CLAUDE_PLUGIN_ROOT}/bin/oat-postcard" clerk-sweep --quiet >/dev/null 2>&1 || true

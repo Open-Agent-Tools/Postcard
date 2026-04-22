@@ -27,7 +27,8 @@ That wires up slash commands (`/send`, `/directory`, `/log`, `/whoami`,
 the CLI is immediately usable inside the plugin's own scripts with no
 separate install.
 
-Requires Python 3.10+ and git available on the machine.
+Requires Python 3.9+ and git available on the machine (macOS's default
+`/usr/bin/python3` works).
 
 ### Standalone CLI (outside Claude Code)
 

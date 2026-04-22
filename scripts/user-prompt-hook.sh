@@ -13,7 +13,7 @@ except Exception: pass
   [[ -n "$session_id" ]] && export CLAUDE_SESSION_ID="$session_id"
 fi
 
-count="$(oat-postcard clerk-pending --count 2>/dev/null || echo 0)"
+count="$("${CLAUDE_PLUGIN_ROOT}/bin/oat-postcard" clerk-pending --count 2>/dev/null || echo 0)"
 count="${count//[^0-9]/}"
 count="${count:-0}"
 
