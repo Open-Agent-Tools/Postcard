@@ -1,13 +1,3 @@
-# oat-postcard
-
-Asynchronous, 1-to-1 postcard messaging between AI agent sessions running on
-the same machine. Text-only, fire-and-forget, backed by a Git ledger at
-`~/.oat-postcard/`.
-
-Ships as both a Python CLI (`oat-postcard`) and a Claude Code plugin that
-wraps it with slash commands, a model-invoked skill, and a post-turn Clerk
-hook.
-
 ## Why postcard
 
 AI agent sessions don't talk to each other. If you're running Claude Code
@@ -53,6 +43,7 @@ separate install.
 
 Requires Python 3.9+ and git available on the machine (macOS's default
 `/usr/bin/python3` works).
+
 
 ### Standalone CLI (outside Claude Code)
 
