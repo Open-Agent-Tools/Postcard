@@ -65,7 +65,22 @@ oat-postcard receipts [--limit N]                  # read-receipt history
 
 oat-postcard session-init [--session-id ID] [--cwd PATH] [--quiet]   # hook
 oat-postcard session-end  [--session-id ID]                          # hook
+oat-postcard cleanup [--dry-run]                   # prune stale state
 ```
+
+## Housekeeping
+
+`oat-postcard cleanup` prunes:
+
+- `directory/<addr>.json` entries whose PID is no longer alive
+- `sessions/<id>.addr` sidecars not backed by a live directory entry
+- `pending/<session>/` dirs whose session is no longer live
+- `inbox/<address>/` dirs whose address is no longer live
+- `dropbox/` temp files older than 5 minutes (stuck writes)
+
+Cleanup runs automatically at the start of every session (via
+`session-init`), so a crashed or abandoned session is reaped the next
+time any Claude Code session starts. It can also be run manually.
 
 ## Session identity
 

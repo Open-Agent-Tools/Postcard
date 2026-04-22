@@ -154,6 +154,18 @@ def _cmd_session_end(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_cleanup(args: argparse.Namespace) -> int:
+    from . import session
+
+    r = session.cleanup(dry_run=args.dry_run)
+    label = "would remove" if args.dry_run else "removed"
+    print(
+        f"{label}: {r.directory} directory, {r.sidecars} sidecars, "
+        f"{r.pending} pending, {r.inbox} inbox, {r.dropbox} dropbox ({r.total()} total)"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="oat-postcard")
     parser.add_argument("--version", action="version", version=f"oat-postcard {__version__}")
@@ -206,6 +218,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_end = sub.add_parser("session-end", help="remove this session from the directory (hook use)")
     p_end.add_argument("--session-id", default=None)
     p_end.set_defaults(func=_cmd_session_end)
+
+    p_clean = sub.add_parser("cleanup", help="prune stale state (dead directory entries, orphan sidecars/pending/inbox, old dropbox temps)")
+    p_clean.add_argument("--dry-run", action="store_true")
+    p_clean.set_defaults(func=_cmd_cleanup)
 
     return parser
 
