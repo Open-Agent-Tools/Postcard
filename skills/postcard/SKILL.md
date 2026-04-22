@@ -1,6 +1,6 @@
 ---
 name: oat-postcard
-description: Use when the user wants to message, notify, or coordinate with another AI agent session running on this machine — or asks who else is active. Wraps the oat-postcard CLI (send, directory, log, whoami) and the postcard-reader subagent for inbox triage.
+description: Use when the user wants to message, notify, or coordinate with another AI agent session running on this machine — or asks who else is active. Wraps the oat-postcard CLI (send, reply, inbox, directory, log, whoami) and the postcard-reader subagent for inbox triage.
 ---
 
 # oat-postcard
@@ -23,7 +23,9 @@ Git-backed ledger at `~/.oat-postcard/postcards/`.
 - `oat-postcard whoami` — this session's address
 - `oat-postcard directory` — list active agents
 - `oat-postcard send <address> "<title>" "<body>"` — send (title ≤140, body ≤1400)
-- `oat-postcard log [--limit N]` — show the ledger
+- `oat-postcard reply <parent-id> "<body>"` — reply to a postcard (recipient + title auto-derived)
+- `oat-postcard inbox [--limit N] [--watch]` — list postcards addressed to this session (passive)
+- `oat-postcard log [--limit N] [--since 1h|24h|...] [--until ...]` — ledger history with time filters
 
 ## Incoming mail (Clerk flow)
 

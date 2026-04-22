@@ -1,8 +1,15 @@
 ---
-description: Triage any pending postcards for this session via the postcard-reader subagent.
+description: List recent postcards addressed to this session (passive — no triage).
+argument-hint: "[--limit N] [--watch]"
 ---
 
-Invoke the `postcard-reader` subagent via the Task tool
-(`subagent_type: postcard-reader`) to triage pending postcards for this
-session. It will file routine mail into TODO.md and surface urgent mail
-back as a summary.
+Run: `oat-postcard inbox $ARGUMENTS`
+
+Shows the last N postcards addressed to this session (default 20), one
+line per entry. Pass `--watch` to tail mode (prints new arrivals as
+they land; exits on Ctrl-C). A ↳-prefixed id on a line means the
+postcard is a reply to that earlier postcard.
+
+Incoming mail is triaged automatically on every turn by the
+`postcard-reader` subagent — this command is for passive observation,
+not to trigger triage.

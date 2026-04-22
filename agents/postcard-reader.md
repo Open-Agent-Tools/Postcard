@@ -69,12 +69,15 @@ what to do.
    - Start with counts: `Filed N to TODO. Surfaced M urgent.`
    - For each surfaced postcard, include the sender, id, title, and the
      **full body verbatim** (not a summary) so the main agent has what
-     it needs to reason about or reply to the message:
+     it needs to reason about or reply to the message. If the postcard
+     has a `reply_to` field, also include it so the main agent knows
+     this message is a reply in a thread:
 
      ```
      - from: <sender>
        id: <8-char id>
        title: <title>
+       reply_to: <parent-8-char id>   # only if the postcard has one
        body: |
          <full body, verbatim, indented>
      ```

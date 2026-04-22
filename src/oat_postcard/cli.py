@@ -2,11 +2,46 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+import time
 from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from . import __version__
+
+_DURATION_RE = re.compile(r"(?i)^\s*(\d+)\s*([smhd])\s*$")
+
+
+def _parse_time_window(spec: str) -> datetime:
+    m = _DURATION_RE.match(spec)
+    if m:
+        n = int(m.group(1))
+        unit = m.group(2).lower()
+        delta = {
+            "s": timedelta(seconds=n),
+            "m": timedelta(minutes=n),
+            "h": timedelta(hours=n),
+            "d": timedelta(days=n),
+        }[unit]
+        return datetime.now(timezone.utc) - delta
+    try:
+        ts = datetime.fromisoformat(spec.strip())
+    except ValueError as e:
+        raise ValueError(
+            f"invalid time spec {spec!r}: expected Ns/Nm/Nh/Nd or ISO timestamp"
+        ) from e
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return ts
+
+
+def _reply_title(parent_title: str) -> str:
+    from . import ledger as _ledger
+
+    base = parent_title if parent_title.startswith("Re: ") else f"Re: {parent_title}"
+    return base[: _ledger.TITLE_MAX]
 
 
 def _cmd_send(args: argparse.Namespace) -> int:
@@ -16,6 +51,57 @@ def _cmd_send(args: argparse.Namespace) -> int:
     pc = ledger.send(sender, args.address, args.title, args.body)
     print(f"sent {pc.id[:8]} to {args.address}")
     return 0
+
+
+def _cmd_reply(args: argparse.Namespace) -> int:
+    from . import ledger, session
+
+    parent = ledger.get_postcard(args.parent_id)
+    if parent is None:
+        print(f"error: no postcard matching {args.parent_id!r}", file=sys.stderr)
+        return 1
+    sender = session.resolve_or_init()
+    title = _reply_title(parent.title)
+    pc = ledger.send(sender, parent.sender, title, args.body, reply_to=parent.id)
+    print(f"sent {pc.id[:8]} to {parent.sender} (reply to {parent.id[:8]})")
+    return 0
+
+
+def _cmd_inbox(args: argparse.Namespace) -> int:
+    from . import ledger, session
+
+    me = session.current_address()
+    if not me:
+        print("error: no session address (run session-init first)", file=sys.stderr)
+        return 1
+
+    def _fmt(pc: "ledger.Postcard") -> str:
+        tag = f" ↳{pc.reply_to[:8]}" if pc.reply_to else ""
+        return f"{pc.sent_at}  {pc.id[:8]}  from {pc.sender}  {pc.title}{tag}"
+
+    cards = ledger.inbox_for_address(me, limit=args.limit)
+    cards.reverse()
+
+    for pc in cards:
+        print(_fmt(pc))
+
+    if not args.watch:
+        if not cards:
+            print("(no inbox)")
+        return 0
+
+    seen = {pc.id for pc in cards}
+    try:
+        while True:
+            time.sleep(args.interval)
+            current = ledger.inbox_for_address(me, limit=args.limit)
+            current.reverse()
+            for pc in current:
+                if pc.id not in seen:
+                    print(_fmt(pc), flush=True)
+                    seen.add(pc.id)
+    except KeyboardInterrupt:
+        return 0
 
 
 def _cmd_directory(args: argparse.Namespace) -> int:
@@ -36,12 +122,35 @@ def _cmd_directory(args: argparse.Namespace) -> int:
 def _cmd_log(args: argparse.Namespace) -> int:
     from . import ledger
 
-    cards = ledger.log(limit=args.limit)
-    if not cards:
-        print("(ledger empty)")
-        return 0
+    try:
+        since = _parse_time_window(args.since) if args.since else None
+        until = _parse_time_window(args.until) if args.until else None
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    cards = ledger.log()
+    filtered: list[ledger.Postcard] = []
     for pc in cards:
-        print(f"{pc.sent_at}  {pc.sender} -> {pc.recipient}  {pc.title}")
+        if since is not None or until is not None:
+            try:
+                ts = datetime.fromisoformat(pc.sent_at)
+            except ValueError:
+                continue
+            if since is not None and ts < since:
+                continue
+            if until is not None and ts > until:
+                continue
+        filtered.append(pc)
+        if args.limit and len(filtered) >= args.limit:
+            break
+
+    if not filtered:
+        print("(no matching postcards)" if (since or until) else "(ledger empty)")
+        return 0
+    for pc in filtered:
+        tag = f" ↳{pc.reply_to[:8]}" if pc.reply_to else ""
+        print(f"{pc.sent_at}  {pc.sender} -> {pc.recipient}  {pc.title}{tag}")
     return 0
 
 
@@ -208,11 +317,47 @@ def build_parser() -> argparse.ArgumentParser:
     p_send.add_argument("body")
     p_send.set_defaults(func=_cmd_send)
 
+    p_reply = sub.add_parser(
+        "reply",
+        help="reply to a postcard (title auto = 'Re: <parent>', recipient = parent sender)",
+    )
+    p_reply.add_argument("parent_id", help="parent postcard id (full or 8-char prefix)")
+    p_reply.add_argument("body")
+    p_reply.set_defaults(func=_cmd_reply)
+
+    p_inbox = sub.add_parser(
+        "inbox",
+        help="list postcards addressed to this session (passive; use --watch to tail)",
+    )
+    p_inbox.add_argument(
+        "--limit", type=int, default=20, help="number of entries (default 20)"
+    )
+    p_inbox.add_argument(
+        "--watch", action="store_true", help="tail mode: print new arrivals as they land"
+    )
+    p_inbox.add_argument(
+        "--interval",
+        type=float,
+        default=2.0,
+        help="poll interval in seconds when --watch (default 2.0)",
+    )
+    p_inbox.set_defaults(func=_cmd_inbox)
+
     p_dir = sub.add_parser("directory", help="list active agents")
     p_dir.set_defaults(func=_cmd_directory)
 
     p_log = sub.add_parser("log", help="show postcard history")
     p_log.add_argument("--limit", type=int, default=None)
+    p_log.add_argument(
+        "--since",
+        default=None,
+        help="only show postcards newer than this (e.g. 1h, 24h, 7d, or ISO timestamp)",
+    )
+    p_log.add_argument(
+        "--until",
+        default=None,
+        help="only show postcards older than this (e.g. 1h, 24h, 7d, or ISO timestamp)",
+    )
     p_log.set_defaults(func=_cmd_log)
 
     p_who = sub.add_parser("whoami", help="print this session's address")

@@ -25,6 +25,7 @@ class Postcard:
     title: str
     body: str
     sent_at: str
+    reply_to: str | None = None
 
 
 @dataclass
@@ -91,7 +92,13 @@ def _atomic_write(payload: str, dest: Path, prefix: str) -> None:
         raise
 
 
-def send(sender: str, recipient: str, title: str, body: str) -> Postcard:
+def send(
+    sender: str,
+    recipient: str,
+    title: str,
+    body: str,
+    reply_to: str | None = None,
+) -> Postcard:
     _validate_lengths(title, body)
     init_ledger()
 
@@ -103,6 +110,7 @@ def send(sender: str, recipient: str, title: str, body: str) -> Postcard:
         title=title,
         body=body,
         sent_at=now.isoformat(timespec="seconds"),
+        reply_to=reply_to,
     )
     payload = json.dumps(asdict(pc), indent=2, ensure_ascii=False)
 
@@ -191,6 +199,40 @@ def log(limit: int | None = None) -> list[Postcard]:
         if limit and len(cards) >= limit:
             break
     return cards
+
+
+def get_postcard(id_or_prefix: str) -> Postcard | None:
+    if not id_or_prefix:
+        return None
+    for pc in log():
+        if pc.id == id_or_prefix or pc.id.startswith(id_or_prefix):
+            return pc
+    return None
+
+
+def inbox_for_address(
+    address: str,
+    limit: int | None = None,
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> list[Postcard]:
+    out: list[Postcard] = []
+    for pc in log():
+        if pc.recipient != address:
+            continue
+        if since is not None or until is not None:
+            try:
+                ts = datetime.fromisoformat(pc.sent_at)
+            except ValueError:
+                continue
+            if since is not None and ts < since:
+                continue
+            if until is not None and ts > until:
+                continue
+        out.append(pc)
+        if limit and len(out) >= limit:
+            break
+    return out
 
 
 def receipts(limit: int | None = None) -> list[Receipt]:

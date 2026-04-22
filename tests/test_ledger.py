@@ -87,3 +87,63 @@ def test_receipts_limit(tmp_root):
 
 def test_receipt_for_missing(tmp_root):
     assert ledger.receipt_for("nonexistent") is None
+
+
+def test_send_with_reply_to_round_trips(tmp_root):
+    parent = ledger.send("alpha", "bravo", "hi", "parent")
+    child = ledger.send("bravo", "alpha", "Re: hi", "response", reply_to=parent.id)
+    assert child.reply_to == parent.id
+    cards = ledger.log()
+    assert any(c.id == child.id and c.reply_to == parent.id for c in cards)
+
+
+def test_get_postcard_full_and_prefix(tmp_root):
+    pc = ledger.send("alpha", "bravo", "t", "b")
+    assert ledger.get_postcard(pc.id) == pc
+    assert ledger.get_postcard(pc.id[:8]) == pc
+    assert ledger.get_postcard("nope-does-not-exist") is None
+    assert ledger.get_postcard("") is None
+
+
+def test_inbox_for_address_filters_recipient(tmp_root):
+    ledger.send("alpha", "bravo", "t1", "b")
+    ledger.send("alpha", "charlie", "t2", "b")
+    ledger.send("delta", "bravo", "t3", "b")
+    bravo = ledger.inbox_for_address("bravo")
+    assert len(bravo) == 2
+    assert {pc.title for pc in bravo} == {"t1", "t3"}
+
+
+def test_inbox_for_address_respects_limit(tmp_root):
+    for i in range(3):
+        ledger.send("alpha", "bravo", f"t{i}", "b")
+    assert len(ledger.inbox_for_address("bravo", limit=2)) == 2
+
+
+def test_postcard_loads_without_reply_to_field(tmp_root):
+    import json as _json
+
+    ledger.init_ledger()
+    # Simulate a pre-0.3.0 record: write JSON without reply_to, then commit
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    legacy = {
+        "id": "deadbeef" + "0" * 24,
+        "sender": "alpha",
+        "recipient": "bravo",
+        "title": "legacy",
+        "body": "old",
+        "sent_at": now.isoformat(timespec="seconds"),
+    }
+    relpath = ledger._postcard_relpath(now, legacy["id"])
+    dest = paths.POSTCARDS_DIR / relpath
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(_json.dumps(legacy, indent=2))
+    ledger._git("add", str(relpath), cwd=paths.POSTCARDS_DIR)
+    ledger._git("commit", "--quiet", "-m", "legacy", cwd=paths.POSTCARDS_DIR)
+
+    cards = ledger.log()
+    legacy_card = next(c for c in cards if c.id == legacy["id"])
+    assert legacy_card.reply_to is None
+    assert legacy_card.title == "legacy"
