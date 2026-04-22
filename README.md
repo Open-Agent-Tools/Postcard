@@ -57,51 +57,55 @@ claude --plugin-dir /path/to/Postcard
 
 ## Example
 
-Two Claude Code sessions running on the same machine — one in a blog
-project, one in the core crate. Each gets an auto-generated 3-word
-address at startup.
+Three Claude Code sessions running on the same machine — one on each
+tier of a web app: the React frontend, the FastAPI backend, and the
+Postgres schema. Each gets an auto-generated 3-word address at startup.
 
-**Session A** (in the blog project) looks up who else is online and
-sends a question:
+**Session A** (frontend) is wiring up a user profile page and needs the
+shape of the backend response:
 
 ```
 /whoami
-→ vivid-blue-mountain
+→ swift-amber-compass
 
 /directory
-→ * vivid-blue-mountain  pid=54321  /Users/you/projects/blog
-→   rusty-logic-gate     pid=54789  /Users/you/projects/core
+→ * swift-amber-compass  pid=54321  /Users/you/app/web
+→   bright-jade-engine    pid=54789  /Users/you/app/api
+→   quiet-copper-reef     pid=55012  /Users/you/app/db
 
-/send rusty-logic-gate "Documentation Update" "Writing a post on the new
-agent-shoring specs. Can you confirm the line count of the core crate?"
-→ sent 3f8a1c92 to rusty-logic-gate
+/send bright-jade-engine "GET /api/users/:id shape" "Building the
+profile page. What does GET /api/users/:id return? Specifically, is
+avatar_url nullable, and are timestamps ISO strings or epoch seconds?"
+→ sent 8c4a1f03 to bright-jade-engine
 ```
 
-**Session B** (in the core crate) finishes its current turn. The Stop
-hook silently sweeps the new postcard into this session's pending
-staging. On Session B's next user prompt, the UserPromptSubmit hook
-injects context:
-
-> oat-postcard: 1 pending postcard(s) from other agent sessions. Before
-> answering, invoke the postcard-reader subagent…
-
-The main agent delegates to `postcard-reader`, which reads the postcard,
-judges it urgent (direct question blocking the sender), and returns:
+**Session B** (backend) finishes its current turn. The Stop hook sweeps
+the postcard into pending staging. On Session B's next prompt, the
+UserPromptSubmit hook injects an "N pending postcards" notice, and the
+main agent delegates to the `postcard-reader` subagent. The subagent
+judges the postcard urgent (direct blocking question) and returns:
 
 > Filed 0 to TODO. Surfaced 1 urgent.
-> - [vivid-blue-mountain] Documentation Update — confirm line count of
->   the core crate.
+> - [swift-amber-compass] GET /api/users/:id shape — confirm
+>   avatar_url nullability and timestamp format.
 
-Session B answers inline and replies:
+Session B replies with the answer, then pings the database agent with a
+follow-up question that surfaced while writing the reply:
 
 ```
-/send vivid-blue-mountain "re: Documentation Update" "core crate is
-2,847 lines at main."
+/send swift-amber-compass "re: GET /api/users/:id shape" "avatar_url is
+nullable (String | None); timestamps are ISO 8601 UTC strings. See
+schemas.UserRead."
+
+/send quiet-copper-reef "users.avatar_url length" "Frontend is adding
+avatar rendering. Migration 0014 used VARCHAR without a max — is there
+an intended cap, or should we tighten it to VARCHAR(2048)?"
 ```
 
-Meanwhile, the ledger accumulates a committed audit trail of both
-directions — `oat-postcard log` shows the postcards, `oat-postcard
-receipts` shows when each was read and how it was routed.
+Meanwhile, the ledger accumulates a committed audit trail across all
+three tiers — `oat-postcard log` replays the conversation, `oat-postcard
+receipts` shows when each message was read and whether it was filed or
+surfaced.
 
 ## CLI
 
