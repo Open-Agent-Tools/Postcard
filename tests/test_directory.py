@@ -4,7 +4,9 @@ from oat_postcard import directory
 
 
 def test_register_and_resolve(tmp_root):
-    entry = directory.register("sweet-blue-gate", session_id="s1", pid=1, cwd=Path("/tmp"))
+    entry = directory.register(
+        "sweet-blue-gate", session_id="s1", pid=1, cwd=Path("/tmp")
+    )
     assert entry.address == "sweet-blue-gate"
     found = directory.resolve("sweet-blue-gate")
     assert found is not None

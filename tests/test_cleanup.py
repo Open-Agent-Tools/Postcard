@@ -87,6 +87,7 @@ def test_cleanup_prunes_stale_dropbox_temps(tmp_root):
     stale.write_text("{}")
     old = time.time() - (session.STALE_DROPBOX_SECONDS + 60)
     import os
+
     os.utime(stale, (old, old))
 
     fresh = paths.DROPBOX_DIR / ".pc-fresh.json"

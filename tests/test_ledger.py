@@ -43,7 +43,9 @@ def test_log_limit(tmp_root):
 
 def test_write_receipt_commits_and_reads_back(tmp_root):
     pc = ledger.send("alpha", "bravo", "hi", "body")
-    r = ledger.write_receipt(pc.id, "file", reader_address="bravo", reader_session_id="sess-B")
+    r = ledger.write_receipt(
+        pc.id, "file", reader_address="bravo", reader_session_id="sess-B"
+    )
     assert r.postcard_id == pc.id
     assert r.action == "file"
     back = ledger.receipt_for(pc.id)

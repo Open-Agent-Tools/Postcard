@@ -33,6 +33,7 @@ def test_resolve_or_init(tmp_root, session_env):
 
 def test_resolve_by_pid_chain_finds_ancestor(tmp_root, monkeypatch):
     from pathlib import Path
+
     directory.register(
         "pid-chain-addr",
         session_id="pid-chain-sess",
