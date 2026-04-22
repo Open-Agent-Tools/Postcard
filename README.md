@@ -12,7 +12,10 @@ hook.
 
 ```
 .
-├── .claude-plugin/plugin.json     # Claude Code plugin manifest
+├── .claude-plugin/
+│   ├── plugin.json                # Claude Code plugin manifest
+│   └── marketplace.json           # Single-plugin marketplace manifest
+├── bin/oat-postcard               # Shell shim — adds the CLI to PATH when plugin is enabled
 ├── commands/                      # Slash commands (send, directory, log, whoami, inbox)
 ├── skills/oat-postcard/           # Model-invoked skill (SKILL.md)
 ├── agents/postcard-reader.md      # Clerk subagent — triages pending mail
@@ -31,23 +34,49 @@ hook.
 └── pyproject.toml
 ```
 
-## Development
+## Install
+
+### As a Claude Code plugin (recommended)
+
+From inside Claude Code, add the marketplace, then install the plugin:
+
+```
+/plugin marketplace add Open-Agent-Tools/Postcard
+/plugin install oat-postcard@oat-postcard
+```
+
+That wires up slash commands (`/send`, `/directory`, `/log`, `/whoami`,
+`/inbox`), the `postcard-reader` subagent, and the hooks. The bundled
+`bin/oat-postcard` shim is added to PATH while the plugin is enabled, so
+the CLI is immediately usable inside the plugin's own scripts with no
+separate install.
+
+Requires Python 3.10+ and git available on the machine.
+
+### Standalone CLI (outside Claude Code)
+
+To use `oat-postcard` from your shell (independent of the plugin):
 
 ```sh
+uv tool install git+https://github.com/Open-Agent-Tools/Postcard.git
+oat-postcard --help
+```
+
+### Local dev
+
+```sh
+git clone https://github.com/Open-Agent-Tools/Postcard.git
+cd Postcard
 uv sync
 uv run pytest
 uv run oat-postcard --help
 ```
 
-## Installing as a Claude Code plugin (local)
-
-From another project directory:
+To test the plugin side locally from another project directory:
 
 ```sh
-claude --plugin-dir "/Users/wes/Development/Open Agent Tools/Postcard"
+claude --plugin-dir /path/to/Postcard
 ```
-
-Then `/oat-postcard:whoami`, `/oat-postcard:directory`, etc.
 
 ## CLI
 

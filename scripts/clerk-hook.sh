@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook (post-turn): sweep this session's inbox into pending staging.
-# The main agent is told about pending mail via the UserPromptSubmit hook
-# on the next user turn; this hook stays silent.
+# Silent on success; the UserPromptSubmit hook tells the main agent
+# about pending mail on the next user turn.
 set -euo pipefail
 
 payload="$(cat 2>/dev/null || true)"
@@ -14,4 +14,4 @@ except Exception: pass
   [[ -n "$session_id" ]] && export CLAUDE_SESSION_ID="$session_id"
 fi
 
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/src" python3 -m oat_postcard clerk-sweep --quiet >/dev/null 2>&1 || true
+oat-postcard clerk-sweep --quiet >/dev/null 2>&1 || true

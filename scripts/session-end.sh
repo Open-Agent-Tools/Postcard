@@ -8,4 +8,4 @@ session_id="$(printf '%s' "$payload" | python3 -c 'import json,sys; print(json.l
 args=()
 [[ -n "$session_id" ]] && args+=(--session-id "$session_id")
 
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/src" python3 -m oat_postcard session-end "${args[@]}" >/dev/null 2>&1 || true
+oat-postcard session-end "${args[@]}" >/dev/null 2>&1 || true

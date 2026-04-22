@@ -11,4 +11,4 @@ args=(--quiet)
 [[ -n "$session_id" ]] && args+=(--session-id "$session_id")
 [[ -n "$cwd" ]] && args+=(--cwd "$cwd")
 
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/src" python3 -m oat_postcard session-init "${args[@]}" >/dev/null 2>&1 || true
+oat-postcard session-init "${args[@]}" >/dev/null 2>&1 || true

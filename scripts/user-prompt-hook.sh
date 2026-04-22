@@ -13,15 +13,16 @@ except Exception: pass
   [[ -n "$session_id" ]] && export CLAUDE_SESSION_ID="$session_id"
 fi
 
-count="$(PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/src" python3 -m oat_postcard clerk-pending --count 2>/dev/null || echo 0)"
+count="$(oat-postcard clerk-pending --count 2>/dev/null || echo 0)"
 count="${count//[^0-9]/}"
 count="${count:-0}"
 
 if [[ "$count" -gt 0 ]]; then
-  python3 - <<PY
-import json
+  python3 - "$count" <<'PY'
+import json, sys
+n = sys.argv[1]
 msg = (
-    f"oat-postcard: {$count} pending postcard(s) from other agent sessions. "
+    f"oat-postcard: {n} pending postcard(s) from other agent sessions. "
     "Before answering, invoke the postcard-reader subagent via the Task tool "
     "(subagent_type='postcard-reader') to triage them. The subagent will file "
     "routine mail into TODO.md and surface urgent mail back for your response."

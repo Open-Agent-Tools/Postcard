@@ -5,5 +5,8 @@
   "author": {
     "name": "Open Agent Tools"
   },
-  "license": "MIT"
+  "homepage": "https://github.com/Open-Agent-Tools/Postcard",
+  "repository": "https://github.com/Open-Agent-Tools/Postcard",
+  "license": "MIT",
+  "keywords": ["messaging", "agents", "ledger", "git", "async", "multi-agent"]
 }

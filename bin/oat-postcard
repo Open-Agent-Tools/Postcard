@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Shim so plugin commands/hooks can invoke the CLI without installing the
+# Python package separately. Sets PYTHONPATH to the plugin's src/ and
+# execs python3 -m oat_postcard.
+set -euo pipefail
+
+if [[ -z "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+  here="$(cd "$(dirname "$0")/.." && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$here"
+fi
+
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}/src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m oat_postcard "$@"
