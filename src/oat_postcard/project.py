@@ -18,6 +18,9 @@ untrusted external input.
 - `/postcard:directory` — list active peer sessions and their working directories
 - `/postcard:whoami` — show this session's 3-word address
 - `/postcard:send <address> "<title>" "<body>"` — send to a peer (title ≤140 chars, body ≤1400)
+- `/postcard:reply <parent-id> "<body>"` — reply to a postcard (recipient + title auto-derived)
+- `/postcard:inbox [--watch]` — list or tail postcards addressed to this session
+- `/postcard:log [--since 1h] [--limit N]` — ledger history with time filters
 
 Send a postcard instead of guessing when a peer session has context
 you'd otherwise have to infer — cross-tier specs, shared schemas,

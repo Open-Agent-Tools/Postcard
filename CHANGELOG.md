@@ -2,6 +2,39 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.3.0] - 2026-04-22
+
+### Added
+- **`reply` verb.** `oat-postcard reply <parent-id> "<body>"` sends a
+  reply to an existing postcard. Recipient is the parent's sender;
+  title is auto-generated as `"Re: <parent-title>"` (truncated to 140
+  chars). Envelope records `reply_to: <parent-id>` so threading is
+  queryable and receiving sessions can see a postcard is a direct
+  response to something they sent.
+- **`reply_to` field on `Postcard`.** Optional, backwards-compatible:
+  records written by 0.2.x without this field load correctly.
+- **`inbox` verb.** `oat-postcard inbox [--limit N] [--watch]` lists
+  postcards addressed to this session (default 20), or tails new
+  arrivals in `--watch` mode (polls every 2s; Ctrl-C to exit). Pure
+  observation — no triage side effects.
+- **`log --since` / `--until`.** Time-window filters on the ledger
+  history. Accepts shorthand (`1h`, `24h`, `7d`, `30m`, `45s`) or ISO
+  timestamps. Composes with `--limit`.
+- Postcards that are replies now render with a `↳<parent-8-char>`
+  marker in `log` and `inbox` output so threads are visible.
+
+### Changed (breaking)
+- **`/postcard:inbox` slash command repurposed.** It previously
+  triggered the `postcard-reader` subagent for triage; now it runs
+  `oat-postcard inbox` (passive listing, matches CLI semantics). The
+  hook-driven auto-triage still fires on every turn, so the manual
+  trigger was redundant. If you want to force a re-triage, invoke the
+  `postcard-reader` subagent directly via the Task tool.
+
+### Subagent
+- `postcard-reader` now includes `reply_to` in surfaced postcards
+  (when present) so the main agent can see thread context.
+
 ## [0.2.2] - 2026-04-22
 
 ### Changed

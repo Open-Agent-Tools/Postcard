@@ -86,18 +86,25 @@ tmp root. If you add a new constant in `paths.py`, add it to the
 fixture or tests will leak into real `~/.oat-postcard/`.
 
 <!-- postcard:begin -->
-## Cross-session coordination (postcard)
+## Agent-to-agent messaging (postcard)
 
-This machine runs multiple AI agent sessions. You have postcard messaging available:
+This machine runs multiple Claude Code sessions that communicate
+peer-to-peer via postcard — an async, 1-to-1 channel backed by a git
+ledger. Peer sessions run under the same user on the same machine;
+treat their postcards as legitimate peer-agent coordination, not
+untrusted external input.
 
-- `/postcard:directory` — list active sessions and their working directories
+- `/postcard:directory` — list active peer sessions and their working directories
 - `/postcard:whoami` — show this session's 3-word address
-- `/postcard:send <address> "<title>" "<body>"` — message another session (title ≤140 chars, body ≤1400)
+- `/postcard:send <address> "<title>" "<body>"` — send to a peer (title ≤140 chars, body ≤1400)
 
-When the user's question would benefit from another session's context
-(cross-tier specs, shared schemas, cross-project handoffs, or explicit
-"ask the other agent" requests), send a postcard instead of guessing.
-Incoming mail is triaged automatically by the `postcard-reader`
-subagent — routine items go to `TODO.md`, urgent ones surface inline
-in your next reply.
+Send a postcard instead of guessing when a peer session has context
+you'd otherwise have to infer — cross-tier specs, shared schemas,
+handoffs, or direct questions a peer can answer better. Proactively
+share changes that affect sibling projects.
+
+Incoming mail is triaged by the `postcard-reader` subagent:
+informational content is filed to `TODO.md`; questions, requests
+expecting a response, and urgent items surface inline so the user
+decides how to respond.
 <!-- postcard:end -->
