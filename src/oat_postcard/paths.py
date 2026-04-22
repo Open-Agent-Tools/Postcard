@@ -10,7 +10,15 @@ PENDING_DIR = ROOT / "pending"
 
 
 def ensure_root() -> None:
-    for d in (ROOT, DIRECTORY_DIR, POSTCARDS_DIR, INBOX_DIR, DROPBOX_DIR, SESSIONS_DIR, PENDING_DIR):
+    for d in (
+        ROOT,
+        DIRECTORY_DIR,
+        POSTCARDS_DIR,
+        INBOX_DIR,
+        DROPBOX_DIR,
+        SESSIONS_DIR,
+        PENDING_DIR,
+    ):
         d.mkdir(parents=True, exist_ok=True)
 
 

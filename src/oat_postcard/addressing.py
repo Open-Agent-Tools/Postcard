@@ -12,4 +12,6 @@ def generate_address(seed: int | None = None) -> str:
 
 
 def session_address() -> str:
-    raise NotImplementedError("resolve the current session's address from the directory")
+    raise NotImplementedError(
+        "resolve the current session's address from the directory"
+    )

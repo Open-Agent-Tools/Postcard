@@ -32,7 +32,9 @@ def current_session_id() -> str:
     if sid:
         return sid
     try:
-        tty = subprocess.check_output(["tty"], stderr=subprocess.DEVNULL, text=True).strip()
+        tty = subprocess.check_output(
+            ["tty"], stderr=subprocess.DEVNULL, text=True
+        ).strip()
         if tty and tty != "not a tty":
             return f"tty:{tty}"
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -67,10 +69,18 @@ def _resolve_by_pid_chain(max_hops: int = 20) -> str | None:
         try:
             result = subprocess.run(
                 ["ps", "-o", "ppid=", "-p", str(pid)],
-                capture_output=True, text=True, check=True, timeout=2,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=2,
             )
             pid = int(result.stdout.strip())
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, OSError):
+        except (
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            ValueError,
+            OSError,
+        ):
             return None
     return None
 

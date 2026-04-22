@@ -135,7 +135,9 @@ def _cmd_receipts(args: argparse.Namespace) -> int:
         print("(no receipts)")
         return 0
     for r in rs:
-        print(f"{r.read_at}  {r.reader_address:<24}  {r.action:<7}  {r.postcard_id[:8]}")
+        print(
+            f"{r.read_at}  {r.reader_address:<24}  {r.action:<7}  {r.postcard_id[:8]}"
+        )
     return 0
 
 
@@ -174,7 +176,9 @@ def _cmd_cleanup(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="oat-postcard")
-    parser.add_argument("--version", action="version", version=f"oat-postcard {__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"oat-postcard {__version__}"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_send = sub.add_parser("send", help="send a postcard to an address")
@@ -193,21 +197,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_who = sub.add_parser("whoami", help="print this session's address")
     p_who.set_defaults(func=_cmd_whoami)
 
-    p_sweep = sub.add_parser("clerk-sweep", help="move new inbox mail into this session's pending staging (hook use)")
+    p_sweep = sub.add_parser(
+        "clerk-sweep",
+        help="move new inbox mail into this session's pending staging (hook use)",
+    )
     p_sweep.add_argument("--quiet", action="store_true")
     p_sweep.set_defaults(func=_cmd_clerk_sweep)
 
-    p_pending = sub.add_parser("clerk-pending", help="list pending postcards for this session")
+    p_pending = sub.add_parser(
+        "clerk-pending", help="list pending postcards for this session"
+    )
     p_pending.add_argument("--json", action="store_true", help="emit full JSON records")
     p_pending.add_argument("--count", action="store_true", help="print only the count")
     p_pending.set_defaults(func=_cmd_clerk_pending)
 
-    p_file = sub.add_parser("clerk-file", help="file a pending postcard into TODO.md and archive it")
+    p_file = sub.add_parser(
+        "clerk-file", help="file a pending postcard into TODO.md and archive it"
+    )
     p_file.add_argument("id", help="postcard id (full or 8-char prefix)")
-    p_file.add_argument("--todo", default=None, help="path to TODO.md (default: ./TODO.md)")
+    p_file.add_argument(
+        "--todo", default=None, help="path to TODO.md (default: ./TODO.md)"
+    )
     p_file.set_defaults(func=_cmd_clerk_file)
 
-    p_surf = sub.add_parser("clerk-surface", help="mark a pending postcard as surfaced to the main agent")
+    p_surf = sub.add_parser(
+        "clerk-surface", help="mark a pending postcard as surfaced to the main agent"
+    )
     p_surf.add_argument("id", help="postcard id (full or 8-char prefix)")
     p_surf.set_defaults(func=_cmd_clerk_surface)
 
@@ -215,18 +230,30 @@ def build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--limit", type=int, default=None)
     p_rec.set_defaults(func=_cmd_receipts)
 
-    p_init = sub.add_parser("session-init", help="initialize this session in the directory (hook use)")
+    p_init = sub.add_parser(
+        "session-init", help="initialize this session in the directory (hook use)"
+    )
     p_init.add_argument("--session-id", default=None)
     p_init.add_argument("--cwd", default=None)
-    p_init.add_argument("--pid", type=int, default=None, help="PID to record in the directory entry (default: ppid of this process)")
+    p_init.add_argument(
+        "--pid",
+        type=int,
+        default=None,
+        help="PID to record in the directory entry (default: ppid of this process)",
+    )
     p_init.add_argument("--quiet", action="store_true")
     p_init.set_defaults(func=_cmd_session_init)
 
-    p_end = sub.add_parser("session-end", help="remove this session from the directory (hook use)")
+    p_end = sub.add_parser(
+        "session-end", help="remove this session from the directory (hook use)"
+    )
     p_end.add_argument("--session-id", default=None)
     p_end.set_defaults(func=_cmd_session_end)
 
-    p_clean = sub.add_parser("cleanup", help="prune stale state (dead directory entries, orphan sidecars/pending/inbox, old dropbox temps)")
+    p_clean = sub.add_parser(
+        "cleanup",
+        help="prune stale state (dead directory entries, orphan sidecars/pending/inbox, old dropbox temps)",
+    )
     p_clean.add_argument("--dry-run", action="store_true")
     p_clean.set_defaults(func=_cmd_cleanup)
 

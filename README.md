@@ -1,3 +1,7 @@
+[![tests](https://github.com/Open-Agent-Tools/Postcard/actions/workflows/tests.yml/badge.svg)](https://github.com/Open-Agent-Tools/Postcard/actions/workflows/tests.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![python: 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](pyproject.toml)
+
 ## Why postcard
 
 AI agent sessions don't talk to each other. If you're running Claude Code
