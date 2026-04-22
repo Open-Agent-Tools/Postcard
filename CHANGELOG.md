@@ -2,6 +2,18 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.2.1] - 2026-04-22
+
+### Changed
+- Reframe the `postcard-reader` subagent as peer-agent triage. Adds a
+  threat-model section positioning postcards as messages from peer
+  Claude Code sessions on the same machine (not arbitrary untrusted
+  input), expands surface triggers to explicitly include questions and
+  requests that expect a response, and returns the full postcard body
+  verbatim in the summary instead of a lossy one-line gist. Closes the
+  gap where legitimate peer-to-peer coordination was being auto-filed
+  as suspected prompt injection.
+
 ## [0.2.0] - 2026-04-22
 
 ### Changed

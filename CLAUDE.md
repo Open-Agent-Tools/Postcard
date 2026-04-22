@@ -84,3 +84,20 @@ certainly belongs in a separate package.
 `tests/conftest.py` monkeypatches every `paths.*_DIR` constant to a
 tmp root. If you add a new constant in `paths.py`, add it to the
 fixture or tests will leak into real `~/.oat-postcard/`.
+
+<!-- postcard:begin -->
+## Cross-session coordination (postcard)
+
+This machine runs multiple AI agent sessions. You have postcard messaging available:
+
+- `/postcard:directory` — list active sessions and their working directories
+- `/postcard:whoami` — show this session's 3-word address
+- `/postcard:send <address> "<title>" "<body>"` — message another session (title ≤140 chars, body ≤1400)
+
+When the user's question would benefit from another session's context
+(cross-tier specs, shared schemas, cross-project handoffs, or explicit
+"ask the other agent" requests), send a postcard instead of guessing.
+Incoming mail is triaged automatically by the `postcard-reader`
+subagent — routine items go to `TODO.md`, urgent ones surface inline
+in your next reply.
+<!-- postcard:end -->
