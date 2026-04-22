@@ -16,6 +16,8 @@ From inside Claude Code, add the marketplace, then install the plugin:
 
 ```
 /plugin marketplace add Open-Agent-Tools/Postcard
+```
+```
 /plugin install oat-postcard@oat-postcard
 ```
 
