@@ -30,7 +30,7 @@ for each, and return a concise summary to the main agent.
    - **Surface to main agent** — time-sensitive, directly blocking the
      current work, a direct question, or explicitly marked urgent. Run:
      ```
-     oat-postcard clerk-archive <id>
+     oat-postcard clerk-surface <id>
      ```
      and include the postcard in your return summary (see below).
 
@@ -48,6 +48,9 @@ for each, and return a concise summary to the main agent.
 - Do not answer the postcards yourself. Your output is triage only; the
   main agent decides what to do with surfaced mail.
 - Do not send postcards from within this subagent.
-- If a postcard cannot be parsed or the CLI errors, archive it and note
+- If a postcard cannot be parsed or the CLI errors, surface it and note
   it in the summary as `skipped: <reason>`.
 - Be conservative about surfacing: when in doubt, file to TODO.
+- Every `clerk-file` and `clerk-surface` emits a receipt commit to the
+  ledger; that's the read-tracking mechanism. You don't need to do
+  anything extra to record the read.

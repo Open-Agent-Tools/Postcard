@@ -82,12 +82,26 @@ def _cmd_clerk_pending(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_clerk_file(args: argparse.Namespace) -> int:
-    from . import clerk, session
+def _reader_identity() -> tuple[str, str] | None:
+    from . import session
 
     sid = session.current_session_id()
+    addr = session.current_address()
+    if not addr:
+        return None
+    return sid, addr
+
+
+def _cmd_clerk_file(args: argparse.Namespace) -> int:
+    from . import clerk
+
+    ident = _reader_identity()
+    if ident is None:
+        print("error: no session address (run session-init first)", file=sys.stderr)
+        return 1
+    sid, addr = ident
     todo = Path(args.todo) if args.todo else None
-    card = clerk.file_to_todo(sid, args.id, todo_path=todo)
+    card = clerk.file_to_todo(sid, addr, args.id, todo_path=todo)
     if card is None:
         print(f"error: no pending postcard matching {args.id}", file=sys.stderr)
         return 1
@@ -95,15 +109,31 @@ def _cmd_clerk_file(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_clerk_archive(args: argparse.Namespace) -> int:
-    from . import clerk, session
+def _cmd_clerk_surface(args: argparse.Namespace) -> int:
+    from . import clerk
 
-    sid = session.current_session_id()
-    card = clerk.archive(sid, args.id)
+    ident = _reader_identity()
+    if ident is None:
+        print("error: no session address (run session-init first)", file=sys.stderr)
+        return 1
+    sid, addr = ident
+    card = clerk.surface(sid, addr, args.id)
     if card is None:
         print(f"error: no pending postcard matching {args.id}", file=sys.stderr)
         return 1
-    print(f"archived {card.id[:8]} ({card.title})")
+    print(f"surfaced {card.id[:8]} ({card.title})")
+    return 0
+
+
+def _cmd_receipts(args: argparse.Namespace) -> int:
+    from . import ledger
+
+    rs = ledger.receipts(limit=args.limit)
+    if not rs:
+        print("(no receipts)")
+        return 0
+    for r in rs:
+        print(f"{r.read_at}  {r.reader_address:<24}  {r.action:<7}  {r.postcard_id[:8]}")
     return 0
 
 
@@ -159,9 +189,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_file.add_argument("--todo", default=None, help="path to TODO.md (default: ./TODO.md)")
     p_file.set_defaults(func=_cmd_clerk_file)
 
-    p_arc = sub.add_parser("clerk-archive", help="archive a pending postcard without filing")
-    p_arc.add_argument("id", help="postcard id (full or 8-char prefix)")
-    p_arc.set_defaults(func=_cmd_clerk_archive)
+    p_surf = sub.add_parser("clerk-surface", help="mark a pending postcard as surfaced to the main agent")
+    p_surf.add_argument("id", help="postcard id (full or 8-char prefix)")
+    p_surf.set_defaults(func=_cmd_clerk_surface)
+
+    p_rec = sub.add_parser("receipts", help="show read receipts from the ledger")
+    p_rec.add_argument("--limit", type=int, default=None)
+    p_rec.set_defaults(func=_cmd_receipts)
 
     p_init = sub.add_parser("session-init", help="initialize this session in the directory (hook use)")
     p_init.add_argument("--session-id", default=None)

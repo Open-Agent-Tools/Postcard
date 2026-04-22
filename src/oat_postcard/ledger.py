@@ -11,6 +11,8 @@ from . import paths
 
 TITLE_MAX = 140
 BODY_MAX = 1400
+RECEIPTS_SUBDIR = "receipts"
+RECEIPT_ACTIONS = ("file", "surface")
 
 
 @dataclass
@@ -21,6 +23,15 @@ class Postcard:
     title: str
     body: str
     sent_at: str
+
+
+@dataclass
+class Receipt:
+    postcard_id: str
+    action: str
+    read_at: str
+    reader_address: str
+    reader_session_id: str
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess:
@@ -62,6 +73,22 @@ def _postcard_relpath(sent_at: datetime, postcard_id: str) -> Path:
     )
 
 
+def _receipt_relpath(postcard_id: str) -> Path:
+    return Path(RECEIPTS_SUBDIR, f"{postcard_id}.json")
+
+
+def _atomic_write(payload: str, dest: Path, prefix: str) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=paths.DROPBOX_DIR, prefix=prefix, suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(payload)
+        os.replace(tmp, dest)
+    except Exception:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
 def send(sender: str, recipient: str, title: str, body: str) -> Postcard:
     _validate_lengths(title, body)
     init_ledger()
@@ -77,18 +104,9 @@ def send(sender: str, recipient: str, title: str, body: str) -> Postcard:
     )
     payload = json.dumps(asdict(pc), indent=2, ensure_ascii=False)
 
-    fd, tmp = tempfile.mkstemp(dir=paths.DROPBOX_DIR, prefix=".pc-", suffix=".json")
-    try:
-        with os.fdopen(fd, "w") as f:
-            f.write(payload)
-
-        relpath = _postcard_relpath(now, pc.id)
-        dest = paths.POSTCARDS_DIR / relpath
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(tmp, dest)
-    except Exception:
-        Path(tmp).unlink(missing_ok=True)
-        raise
+    relpath = _postcard_relpath(now, pc.id)
+    dest = paths.POSTCARDS_DIR / relpath
+    _atomic_write(payload, dest, prefix=".pc-")
 
     inbox = paths.inbox_for(recipient)
     inbox.mkdir(parents=True, exist_ok=True)
@@ -98,8 +116,7 @@ def send(sender: str, recipient: str, title: str, body: str) -> Postcard:
     except OSError:
         inbox_entry.write_text(payload)
 
-    rel = str(relpath)
-    _git("add", rel, cwd=paths.POSTCARDS_DIR)
+    _git("add", str(relpath), cwd=paths.POSTCARDS_DIR)
     _git(
         "commit",
         "--quiet",
@@ -110,18 +127,59 @@ def send(sender: str, recipient: str, title: str, body: str) -> Postcard:
     return pc
 
 
-def log(limit: int | None = None) -> list[Postcard]:
+def write_receipt(
+    postcard_id: str,
+    action: str,
+    reader_address: str,
+    reader_session_id: str,
+) -> Receipt:
+    if action not in RECEIPT_ACTIONS:
+        raise ValueError(f"action must be one of {RECEIPT_ACTIONS}, got {action!r}")
     init_ledger()
-    args = ["log", "--name-only", "--pretty=format:", "--diff-filter=A"]
+
+    receipt = Receipt(
+        postcard_id=postcard_id,
+        action=action,
+        read_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        reader_address=reader_address,
+        reader_session_id=reader_session_id,
+    )
+    payload = json.dumps(asdict(receipt), indent=2, ensure_ascii=False)
+
+    relpath = _receipt_relpath(postcard_id)
+    dest = paths.POSTCARDS_DIR / relpath
+    _atomic_write(payload, dest, prefix=".rc-")
+
+    _git("add", str(relpath), cwd=paths.POSTCARDS_DIR)
+    _git(
+        "commit",
+        "--quiet",
+        "-m",
+        f"receipt: {reader_address} {action} {postcard_id[:8]}",
+        cwd=paths.POSTCARDS_DIR,
+    )
+    return receipt
+
+
+def _read_git_log_files(limit: int | None, *pathspecs: str) -> list[str]:
+    args = ["log"]
     if limit:
         args.append(f"-n{limit}")
+    args.extend(["--name-only", "--pretty=format:", "--diff-filter=A"])
+    if pathspecs:
+        args.append("--")
+        args.extend(pathspecs)
     result = _git(*args, cwd=paths.POSTCARDS_DIR)
+    return [ln.strip() for ln in result.stdout.splitlines() if ln.strip()]
+
+
+def log(limit: int | None = None) -> list[Postcard]:
+    init_ledger()
     cards: list[Postcard] = []
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if not line or line == ".gitkeep":
+    for rel in _read_git_log_files(limit):
+        if rel == ".gitkeep" or rel.startswith(f"{RECEIPTS_SUBDIR}/"):
             continue
-        p = paths.POSTCARDS_DIR / line
+        p = paths.POSTCARDS_DIR / rel
         if not p.exists():
             continue
         try:
@@ -131,3 +189,29 @@ def log(limit: int | None = None) -> list[Postcard]:
         if limit and len(cards) >= limit:
             break
     return cards
+
+
+def receipts(limit: int | None = None) -> list[Receipt]:
+    init_ledger()
+    out: list[Receipt] = []
+    for rel in _read_git_log_files(limit, f"{RECEIPTS_SUBDIR}/"):
+        p = paths.POSTCARDS_DIR / rel
+        if not p.exists():
+            continue
+        try:
+            out.append(Receipt(**json.loads(p.read_text())))
+        except (json.JSONDecodeError, OSError, TypeError):
+            continue
+        if limit and len(out) >= limit:
+            break
+    return out
+
+
+def receipt_for(postcard_id: str) -> Receipt | None:
+    p = paths.POSTCARDS_DIR / _receipt_relpath(postcard_id)
+    if not p.exists():
+        return None
+    try:
+        return Receipt(**json.loads(p.read_text()))
+    except (json.JSONDecodeError, OSError, TypeError):
+        return None

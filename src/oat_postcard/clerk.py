@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from . import paths
+from . import ledger, paths
 from .ledger import Postcard
 
 TODO_HEADER = "## Postcards"
@@ -57,28 +57,39 @@ def _find(session_id: str, postcard_id: str) -> tuple[Path, Postcard] | None:
     return None
 
 
-def file_to_todo(session_id: str, postcard_id: str, todo_path: Path | None = None) -> Postcard | None:
-    """Append a pending postcard to TODO.md and archive it."""
+def file_to_todo(
+    session_id: str,
+    reader_address: str,
+    postcard_id: str,
+    todo_path: Path | None = None,
+) -> Postcard | None:
+    """Append a pending postcard to TODO.md, archive it, and emit a file receipt."""
     found = _find(session_id, postcard_id)
     if found is None:
         return None
     path, card = found
     _append_todo(todo_path or (Path.cwd() / "TODO.md"), [card])
-    _archive(session_id, path)
+    _move_to_read(session_id, path)
+    ledger.write_receipt(card.id, "file", reader_address, session_id)
     return card
 
 
-def archive(session_id: str, postcard_id: str) -> Postcard | None:
-    """Mark a pending postcard as processed without filing it."""
+def surface(
+    session_id: str,
+    reader_address: str,
+    postcard_id: str,
+) -> Postcard | None:
+    """Mark a pending postcard as surfaced to the main agent and emit a surface receipt."""
     found = _find(session_id, postcard_id)
     if found is None:
         return None
     path, card = found
-    _archive(session_id, path)
+    _move_to_read(session_id, path)
+    ledger.write_receipt(card.id, "surface", reader_address, session_id)
     return card
 
 
-def _archive(session_id: str, path: Path) -> None:
+def _move_to_read(session_id: str, path: Path) -> None:
     dest = paths.archive_for(session_id)
     dest.mkdir(parents=True, exist_ok=True)
     path.rename(dest / path.name)

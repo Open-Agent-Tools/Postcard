@@ -60,7 +60,8 @@ oat-postcard whoami
 oat-postcard clerk-sweep [--quiet]                 # hook: inbox -> pending
 oat-postcard clerk-pending [--json|--count]        # subagent reads state
 oat-postcard clerk-file <id> [--todo PATH]         # subagent: file to TODO
-oat-postcard clerk-archive <id>                    # subagent: dismiss
+oat-postcard clerk-surface <id>                    # subagent: surface to main
+oat-postcard receipts [--limit N]                  # read-receipt history
 
 oat-postcard session-init [--session-id ID] [--cwd PATH] [--quiet]   # hook
 oat-postcard session-end  [--session-id ID]                          # hook
@@ -91,10 +92,22 @@ The Clerk is a subagent, not a hook — the hooks only raise the flag.
    The subagent:
    - Runs `clerk-pending --json` to list staged mail.
    - For each postcard, chooses **file to TODO** (`clerk-file <id>`) for
-     routine mail, or **surface** (`clerk-archive <id>` + include in
+     routine mail, or **surface** (`clerk-surface <id>` + include in
      summary) for urgent mail.
 5. The subagent returns a summary; the main agent acts on any surfaced
    urgent items.
+
+## Read receipts
+
+Every `clerk-file` and `clerk-surface` emits a receipt file at
+`~/.oat-postcard/postcards/receipts/<postcard-id>.json` and commits it to
+the ledger. Receipt fields: `postcard_id`, `action` (`file` | `surface`),
+`read_at`, `reader_address`, `reader_session_id`.
+
+The ledger thus records both sends and reads — `oat-postcard log` shows
+postcards, `oat-postcard receipts` shows reads, and the underlying git
+history has everything interleaved with commit messages prefixed
+`receipt:` for receipts.
 
 ## License
 
