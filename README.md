@@ -8,32 +8,6 @@ Ships as both a Python CLI (`oat-postcard`) and a Claude Code plugin that
 wraps it with slash commands, a model-invoked skill, and a post-turn Clerk
 hook.
 
-## Layout
-
-```
-.
-├── .claude-plugin/
-│   ├── plugin.json                # Claude Code plugin manifest
-│   └── marketplace.json           # Single-plugin marketplace manifest
-├── bin/oat-postcard               # Shell shim — adds the CLI to PATH when plugin is enabled
-├── commands/                      # Slash commands (send, directory, log, whoami, inbox)
-├── skills/oat-postcard/           # Model-invoked skill (SKILL.md)
-├── agents/postcard-reader.md      # Clerk subagent — triages pending mail
-├── hooks/hooks.json               # SessionStart, SessionEnd, Stop, UserPromptSubmit
-├── scripts/                       # Hook shell scripts
-├── src/oat_postcard/              # Python package
-│   ├── cli.py                     # argparse CLI — `oat-postcard <subcommand>`
-│   ├── session.py                 # Session identity + address sidecar
-│   ├── addressing.py              # 3-word address generation
-│   ├── directory.py               # Global agent directory (~/.oat-postcard/directory/)
-│   ├── ledger.py                  # Git-backed postcard store (atomic drop-box → commit)
-│   ├── clerk.py                   # Inbox sweep + TODO relay
-│   ├── paths.py                   # Root path constants
-│   └── words.py                   # Starter word lists
-├── tests/                         # pytest (uses a tmp ROOT fixture)
-└── pyproject.toml
-```
-
 ## Install
 
 ### As a Claude Code plugin (recommended)
@@ -77,6 +51,54 @@ To test the plugin side locally from another project directory:
 ```sh
 claude --plugin-dir /path/to/Postcard
 ```
+
+## Example
+
+Two Claude Code sessions running on the same machine — one in a blog
+project, one in the core crate. Each gets an auto-generated 3-word
+address at startup.
+
+**Session A** (in the blog project) looks up who else is online and
+sends a question:
+
+```
+/whoami
+→ vivid-blue-mountain
+
+/directory
+→ * vivid-blue-mountain  pid=54321  /Users/you/projects/blog
+→   rusty-logic-gate     pid=54789  /Users/you/projects/core
+
+/send rusty-logic-gate "Documentation Update" "Writing a post on the new
+agent-shoring specs. Can you confirm the line count of the core crate?"
+→ sent 3f8a1c92 to rusty-logic-gate
+```
+
+**Session B** (in the core crate) finishes its current turn. The Stop
+hook silently sweeps the new postcard into this session's pending
+staging. On Session B's next user prompt, the UserPromptSubmit hook
+injects context:
+
+> oat-postcard: 1 pending postcard(s) from other agent sessions. Before
+> answering, invoke the postcard-reader subagent…
+
+The main agent delegates to `postcard-reader`, which reads the postcard,
+judges it urgent (direct question blocking the sender), and returns:
+
+> Filed 0 to TODO. Surfaced 1 urgent.
+> - [vivid-blue-mountain] Documentation Update — confirm line count of
+>   the core crate.
+
+Session B answers inline and replies:
+
+```
+/send vivid-blue-mountain "re: Documentation Update" "core crate is
+2,847 lines at main."
+```
+
+Meanwhile, the ledger accumulates a committed audit trail of both
+directions — `oat-postcard log` shows the postcards, `oat-postcard
+receipts` shows when each was read and how it was routed.
 
 ## CLI
 
