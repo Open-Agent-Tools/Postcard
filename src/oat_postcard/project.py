@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+from enum import Enum
+from pathlib import Path
+
+BEGIN_MARKER = "<!-- oat-postcard:begin -->"
+END_MARKER = "<!-- oat-postcard:end -->"
+
+BLOCK = f"""{BEGIN_MARKER}
+## Cross-session coordination (oat-postcard)
+
+This machine runs multiple AI agent sessions. You have postcard messaging available:
+
+- `/oat-postcard:directory` — list active sessions and their working directories
+- `/oat-postcard:whoami` — show this session's 3-word address
+- `/oat-postcard:send <address> "<title>" "<body>"` — message another session (title ≤140 chars, body ≤1400)
+
+When the user's question would benefit from another session's context
+(cross-tier specs, shared schemas, cross-project handoffs, or explicit
+"ask the other agent" requests), send a postcard instead of guessing.
+Incoming mail is triaged automatically by the `postcard-reader`
+subagent — routine items go to `TODO.md`, urgent ones surface inline
+in your next reply.
+{END_MARKER}
+"""
+
+
+class InitResult(Enum):
+    CREATED = "created"
+    APPENDED = "appended"
+    REPLACED = "replaced"
+    UNCHANGED = "unchanged"
+
+
+def resolve_target(path: Path | None, cwd: Path) -> Path:
+    """Pick the target doc file: explicit path > ./CLAUDE.md > ./AGENTS.md > ./CLAUDE.md (new)."""
+    if path is not None:
+        return path
+    claude_md = cwd / "CLAUDE.md"
+    if claude_md.exists():
+        return claude_md
+    agents_md = cwd / "AGENTS.md"
+    if agents_md.exists():
+        return agents_md
+    return claude_md
+
+
+def init_doc(path: Path, force: bool = False) -> InitResult:
+    """Append an idempotent oat-postcard coordination block to the file.
+
+    Returns:
+      CREATED   - file didn't exist; created with the block.
+      APPENDED  - file existed without the block; block appended.
+      REPLACED  - file had a block; replaced it with the current BLOCK (force only).
+      UNCHANGED - file had a block and force=False; no write.
+    """
+    existed = path.exists()
+    existing = path.read_text() if existed else ""
+
+    if BEGIN_MARKER in existing and END_MARKER in existing:
+        if not force:
+            return InitResult.UNCHANGED
+        begin = existing.index(BEGIN_MARKER)
+        end = existing.index(END_MARKER) + len(END_MARKER)
+        new_content = existing[:begin] + BLOCK.rstrip() + existing[end:]
+        if existing.endswith("\n") and not new_content.endswith("\n"):
+            new_content += "\n"
+        path.write_text(new_content)
+        return InitResult.REPLACED
+
+    separator = ""
+    if existing:
+        if not existing.endswith("\n"):
+            separator = "\n\n"
+        elif not existing.endswith("\n\n"):
+            separator = "\n"
+    path.write_text(existing + separator + BLOCK)
+    return InitResult.CREATED if not existed else InitResult.APPENDED

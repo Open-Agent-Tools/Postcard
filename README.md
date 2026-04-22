@@ -143,7 +143,19 @@ oat-postcard receipts [--limit N]                  # read-receipt history
 oat-postcard session-init [--session-id ID] [--cwd PATH] [--quiet]   # hook
 oat-postcard session-end  [--session-id ID]                          # hook
 oat-postcard cleanup [--dry-run]                   # prune stale state
+oat-postcard init [--path PATH] [--force]          # append hint to CLAUDE.md
 ```
+
+## Onboarding
+
+New to a project? Run `/oat-postcard:onboard` inside Claude Code. It
+gives a short tour, appends a coordination hint to your project's
+`CLAUDE.md` (or `AGENTS.md`) so future agents in that project will
+reach for postcards proactively, and shows your current address and
+who else is active.
+
+For non-interactive use, `oat-postcard init` does the persistence step
+alone and is idempotent (re-running is a no-op; `--force` rewrites).
 
 ## Housekeeping
 

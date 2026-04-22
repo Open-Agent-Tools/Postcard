@@ -162,6 +162,27 @@ def _cmd_session_end(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_init(args: argparse.Namespace) -> int:
+    from . import project
+
+    target = project.resolve_target(
+        Path(args.path) if args.path else None,
+        Path.cwd(),
+    )
+    result = project.init_doc(target, force=args.force)
+    if result is project.InitResult.CREATED:
+        print(f"created {target}")
+    elif result is project.InitResult.APPENDED:
+        print(f"appended oat-postcard block to {target}")
+    elif result is project.InitResult.REPLACED:
+        print(f"replaced oat-postcard block in {target}")
+    else:
+        print(
+            f"oat-postcard block already present in {target} (use --force to rewrite)"
+        )
+    return 0
+
+
 def _cmd_cleanup(args: argparse.Namespace) -> int:
     from . import session
 
@@ -256,6 +277,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_clean.add_argument("--dry-run", action="store_true")
     p_clean.set_defaults(func=_cmd_cleanup)
+
+    p_proj = sub.add_parser(
+        "init",
+        help="append a coordination hint to this project's CLAUDE.md (or AGENTS.md)",
+    )
+    p_proj.add_argument(
+        "--path", default=None, help="target file (default: ./CLAUDE.md or ./AGENTS.md)"
+    )
+    p_proj.add_argument(
+        "--force", action="store_true", help="rewrite the block if already present"
+    )
+    p_proj.set_defaults(func=_cmd_init)
 
     return parser
 

@@ -2,6 +2,16 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.1.5] - 2026-04-22
+
+### Added
+- `oat-postcard init` CLI: appends an idempotent coordination block to
+  the project's `CLAUDE.md` (or `AGENTS.md`). Markers are HTML comments
+  so re-running is a no-op; `--force` rewrites in place.
+- `/oat-postcard:onboard` slash command: walks the user through what
+  postcards are, runs `init` to persist the hint, shows their address
+  and the active directory, and one-lines the send/receive flow.
+
 ## [0.1.4] - 2026-04-22
 
 ### Fixed
