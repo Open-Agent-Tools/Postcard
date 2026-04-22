@@ -3,17 +3,17 @@ from __future__ import annotations
 from enum import Enum
 from pathlib import Path
 
-BEGIN_MARKER = "<!-- oat-postcard:begin -->"
-END_MARKER = "<!-- oat-postcard:end -->"
+BEGIN_MARKER = "<!-- postcard:begin -->"
+END_MARKER = "<!-- postcard:end -->"
 
 BLOCK = f"""{BEGIN_MARKER}
-## Cross-session coordination (oat-postcard)
+## Cross-session coordination (postcard)
 
 This machine runs multiple AI agent sessions. You have postcard messaging available:
 
-- `/oat-postcard:directory` — list active sessions and their working directories
-- `/oat-postcard:whoami` — show this session's 3-word address
-- `/oat-postcard:send <address> "<title>" "<body>"` — message another session (title ≤140 chars, body ≤1400)
+- `/postcard:directory` — list active sessions and their working directories
+- `/postcard:whoami` — show this session's 3-word address
+- `/postcard:send <address> "<title>" "<body>"` — message another session (title ≤140 chars, body ≤1400)
 
 When the user's question would benefit from another session's context
 (cross-tier specs, shared schemas, cross-project handoffs, or explicit

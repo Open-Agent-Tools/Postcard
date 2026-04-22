@@ -2,6 +2,24 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.2.0] - 2026-04-22
+
+### Changed
+- **Plugin renamed from `oat-postcard` to `postcard`** (marketplace name
+  stays `oat-postcard`). Slash commands flip from `/oat-postcard:*` to
+  `/postcard:*`. Skill, directory `skills/postcard/`, and frontmatter
+  `name: postcard` follow suit. The Python package, CLI binary
+  (`oat-postcard`), and PyPI name are unchanged.
+- `init` command's HTML-comment markers renamed from `oat-postcard:begin/end`
+  to `postcard:begin/end`. Existing `CLAUDE.md` entries written by 0.1.5
+  will not be detected by 0.2.0's idempotency check — re-run
+  `oat-postcard init` to get the new block alongside (or delete the
+  old one manually).
+
+### Install
+- Old: `/plugin install oat-postcard@oat-postcard`
+- New: `/plugin install postcard@oat-postcard`
+
 ## [0.1.5] - 2026-04-22
 
 ### Added
