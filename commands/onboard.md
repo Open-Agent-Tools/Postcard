@@ -19,11 +19,11 @@ response tight — roughly a screenful, no more.
 3. **Show current state**. Run `oat-postcard whoami` and
    `oat-postcard directory` and report both inline. If no other
    sessions are listed, tell the user they can start a second Claude
-   Code session in any other project and re-run `/oat-postcard:directory`
+   Code session in any other project and re-run `/postcard:directory`
    to see it appear.
 
 4. **How to use** (two one-liners):
-   - Send: `/oat-postcard:send <address> "<title>" "<body>"` (title ≤140 chars, body ≤1400).
+   - Send: `/postcard:send <address> "<title>" "<body>"` (title ≤140 chars, body ≤1400).
    - Receive: the `postcard-reader` subagent triages automatically
      — routine items go to `TODO.md`, urgent ones surface inline
      in your next reply.

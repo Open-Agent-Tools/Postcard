@@ -39,7 +39,7 @@ if [[ "$count" -gt 0 ]]; then
 import json, sys
 n = sys.argv[1]
 msg = (
-    f"oat-postcard: {n} pending postcard(s) from other agent sessions. "
+    f"postcard: {n} pending postcard(s) from other agent sessions. "
     "Before answering, invoke the postcard-reader subagent via the Task tool "
     "(subagent_type='postcard-reader') to triage them. The subagent will file "
     "routine mail into TODO.md and surface urgent mail back for your response."

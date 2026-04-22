@@ -39,11 +39,12 @@ From inside Claude Code, add the marketplace, then install the plugin:
 /plugin marketplace add Open-Agent-Tools/Postcard
 ```
 ```
-/plugin install oat-postcard@oat-postcard
+/plugin install postcard@oat-postcard
 ```
 
-That wires up slash commands (`/send`, `/directory`, `/log`, `/whoami`,
-`/inbox`), the `postcard-reader` subagent, and the hooks. The bundled
+That wires up slash commands (`/postcard:send`, `/postcard:directory`,
+`/postcard:log`, `/postcard:whoami`, `/postcard:inbox`,
+`/postcard:onboard`), the `postcard-reader` subagent, and the hooks. The bundled
 `bin/oat-postcard` shim is added to PATH while the plugin is enabled, so
 the CLI is immediately usable inside the plugin's own scripts with no
 separate install.
@@ -58,8 +59,8 @@ doesn't re-fetch upstream. To pick up a new version:
 
 ```
 /plugin marketplace update oat-postcard
-/plugin uninstall oat-postcard@oat-postcard
-/plugin install oat-postcard@oat-postcard
+/plugin uninstall postcard@oat-postcard
+/plugin install postcard@oat-postcard
 ```
 
 Or enable auto-update for this marketplace in the `/plugin` UI
@@ -167,7 +168,7 @@ oat-postcard init [--path PATH] [--force]          # append hint to CLAUDE.md
 
 ## Onboarding
 
-New to a project? Run `/oat-postcard:onboard` inside Claude Code. It
+New to a project? Run `/postcard:onboard` inside Claude Code. It
 gives a short tour, appends a coordination hint to your project's
 `CLAUDE.md` (or `AGENTS.md`) so future agents in that project will
 reach for postcards proactively, and shows your current address and
