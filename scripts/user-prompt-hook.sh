@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 # UserPromptSubmit hook: if this session has pending postcards, inject
 # additionalContext so the main agent invokes the postcard-reader subagent.
-set -euo pipefail
+set -eo pipefail
+
+HERE="$(cd "$(dirname "$0")/.." && pwd)"
+CLI="$HERE/bin/oat-postcard"
 
 payload="$(cat 2>/dev/null || true)"
-if [[ -n "$payload" ]]; then
+if [[ -n "${payload:-}" ]]; then
   session_id="$(printf '%s' "$payload" | python3 -c '
 import json, sys
 try: print(json.load(sys.stdin).get("session_id", ""))
 except Exception: pass
 ' 2>/dev/null || true)"
-  [[ -n "$session_id" ]] && export CLAUDE_SESSION_ID="$session_id"
+  [[ -n "${session_id:-}" ]] && export CLAUDE_SESSION_ID="$session_id"
 fi
 
-count="$("${CLAUDE_PLUGIN_ROOT}/bin/oat-postcard" clerk-pending --count 2>/dev/null || echo 0)"
+count="$("$CLI" clerk-pending --count 2>/dev/null || echo 0)"
 count="${count//[^0-9]/}"
 count="${count:-0}"
 
