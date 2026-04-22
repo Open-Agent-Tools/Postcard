@@ -27,7 +27,7 @@ except Exception: pass
   [[ -n "${session_id:-}" ]] && export CLAUDE_SESSION_ID="$session_id"
 fi
 
-init_args=(--quiet)
+init_args=(--quiet --pid "$PPID")
 [[ -n "${session_id:-}" ]] && init_args+=(--session-id "$session_id")
 [[ -n "${cwd:-}" ]] && init_args+=(--cwd "$cwd")
 "$CLI" session-init "${init_args[@]}" >/dev/null 2>&1 || true

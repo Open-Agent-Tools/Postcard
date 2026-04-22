@@ -143,7 +143,11 @@ def _cmd_session_init(args: argparse.Namespace) -> int:
     from . import ledger, session
 
     ledger.init_ledger()
-    addr = session.init_session(session_id=args.session_id, cwd=Path(args.cwd) if args.cwd else None)
+    addr = session.init_session(
+        session_id=args.session_id,
+        cwd=Path(args.cwd) if args.cwd else None,
+        pid=args.pid,
+    )
     if not args.quiet:
         print(addr)
     return 0
@@ -214,6 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_init = sub.add_parser("session-init", help="initialize this session in the directory (hook use)")
     p_init.add_argument("--session-id", default=None)
     p_init.add_argument("--cwd", default=None)
+    p_init.add_argument("--pid", type=int, default=None, help="PID to record in the directory entry (default: ppid of this process)")
     p_init.add_argument("--quiet", action="store_true")
     p_init.set_defaults(func=_cmd_session_init)
 

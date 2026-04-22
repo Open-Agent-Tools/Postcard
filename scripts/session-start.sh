@@ -10,7 +10,7 @@ payload="$(cat)"
 session_id="$(printf '%s' "$payload" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("session_id",""))')"
 cwd="$(printf '%s' "$payload" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cwd",""))')"
 
-args=(--quiet)
+args=(--quiet --pid "$PPID")
 [[ -n "$session_id" ]] && args+=(--session-id "$session_id")
 [[ -n "$cwd" ]] && args+=(--cwd "$cwd")
 

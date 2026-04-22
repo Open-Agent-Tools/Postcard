@@ -92,7 +92,11 @@ def current_address() -> str | None:
     return f.read_text().strip() or None
 
 
-def init_session(session_id: str | None = None, cwd: Path | None = None) -> str:
+def init_session(
+    session_id: str | None = None,
+    cwd: Path | None = None,
+    pid: int | None = None,
+) -> str:
     paths.ensure_root()
     cleanup()
     sid = session_id or current_session_id()
@@ -106,7 +110,12 @@ def init_session(session_id: str | None = None, cwd: Path | None = None) -> str:
     else:
         raise RuntimeError("could not find a free address after 64 tries")
     f.write_text(addr + "\n")
-    directory.register(addr, session_id=sid, pid=os.getppid(), cwd=cwd or Path.cwd())
+    directory.register(
+        addr,
+        session_id=sid,
+        pid=pid if pid is not None else os.getppid(),
+        cwd=cwd or Path.cwd(),
+    )
     return addr
 
 
