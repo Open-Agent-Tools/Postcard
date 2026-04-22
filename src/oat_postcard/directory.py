@@ -73,6 +73,10 @@ def resolve(address: str) -> Entry | None:
     return Entry(**data)
 
 
+def is_active(address: str) -> bool:
+    return any(e.address == address for e in list_active())
+
+
 def list_active(prune: bool = True) -> list[Entry]:
     paths.ensure_root()
     entries: list[Entry] = []

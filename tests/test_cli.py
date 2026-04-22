@@ -1,8 +1,19 @@
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
-from oat_postcard import cli, ledger, session
+from oat_postcard import cli, directory, ledger, session
+
+
+def _register_live_peer(address: str) -> None:
+    directory.register(
+        address=address,
+        session_id=f"test-{address}",
+        pid=os.getpid(),
+        cwd=Path.cwd(),
+    )
 
 
 def test_parse_time_window_accepts_shorthand():
@@ -37,6 +48,7 @@ def test_reply_title_truncates_to_max():
 
 def test_reply_cmd_sends_with_reply_to(tmp_root, session_env, capsys):
     me = session.init_session()
+    _register_live_peer("peer")
     parent = ledger.send("peer", me, "parent title", "parent body")
 
     rc = cli.main(["reply", parent.id[:8], "acknowledged"])
@@ -115,6 +127,7 @@ def test_log_rejects_bad_time_spec(tmp_root, session_env, capsys):
 
 def test_send_oversized_body_returns_clean_error(tmp_root, session_env, capsys):
     session.init_session()
+    _register_live_peer("peer")
     big = "x" * (ledger.BODY_MAX + 1)
     rc = cli.main(["send", "peer", "short title", big])
     assert rc == 1
@@ -125,8 +138,52 @@ def test_send_oversized_body_returns_clean_error(tmp_root, session_env, capsys):
 
 def test_send_oversized_title_returns_clean_error(tmp_root, session_env, capsys):
     session.init_session()
+    _register_live_peer("peer")
     rc = cli.main(["send", "peer", "x" * (ledger.TITLE_MAX + 1), "body"])
     assert rc == 1
     err = capsys.readouterr().err
     assert "title exceeds" in err
     assert "Traceback" not in err
+
+
+def test_send_rejects_dead_address(tmp_root, session_env, capsys):
+    session.init_session()
+    rc = cli.main(["send", "ghost-dead-address", "t", "b"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "not in the live directory" in err
+    assert "'ghost-dead-address'" in err
+    assert "--force" in err
+    # No postcard should have been written
+    assert ledger.log() == []
+
+
+def test_send_force_bypasses_dead_address_check(tmp_root, session_env, capsys):
+    session.init_session()
+    rc = cli.main(["send", "--force", "ghost-dead-address", "t", "b"])
+    assert rc == 0
+    assert "sent" in capsys.readouterr().out
+    cards = ledger.log()
+    assert len(cards) == 1 and cards[0].recipient == "ghost-dead-address"
+
+
+def test_reply_rejects_dead_parent_sender(tmp_root, session_env, capsys):
+    me = session.init_session()
+    # Parent came from a peer who is no longer in the directory
+    parent = ledger.send("ghost-peer", me, "parent", "body")
+    rc = cli.main(["reply", parent.id[:8], "acknowledged"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "no longer in the live directory" in err
+    assert "'ghost-peer'" in err
+    assert "--force" in err
+
+
+def test_reply_force_bypasses_dead_parent_sender_check(tmp_root, session_env, capsys):
+    me = session.init_session()
+    parent = ledger.send("ghost-peer", me, "parent", "body")
+    rc = cli.main(["reply", "--force", parent.id[:8], "acknowledged"])
+    assert rc == 0
+    cards = ledger.log()
+    reply = next(c for c in cards if c.reply_to == parent.id)
+    assert reply.recipient == "ghost-peer"

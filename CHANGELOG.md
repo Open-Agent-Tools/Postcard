@@ -2,6 +2,25 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.3.3] - 2026-04-22
+
+### Changed
+- `send` and `reply` now validate the recipient against the live
+  directory and error out by default if the address is not active.
+  Previously sends to dead addresses silently wrote to an orphan
+  inbox that `cleanup` would later garbage-collect — making it look
+  like the message went through when in fact no peer ever read it.
+  Since 3-word addresses are per-session and don't persist across
+  restarts, a dead-address send is almost always a bug.
+- Error format: `error: address 'foo-bar-baz' is not in the live
+  directory. Run 'oat-postcard directory' to see active peers;
+  --force to send anyway.` (Or the equivalent "parent sender no
+  longer in the live directory" variant for `reply`.)
+- `--force` flag added to both `send` and `reply` to bypass the check
+  when you intentionally want to drop a postcard into an orphan
+  inbox (testing, debugging).
+- New helper `directory.is_active(address) -> bool`.
+
 ## [0.3.2] - 2026-04-22
 
 ### Changed

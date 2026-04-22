@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Asynchronous 1-to-1 postcard messaging between AI agent sessions via a Git-backed ledger",
-    "version": "0.3.2"
+    "version": "0.3.3"
   },
   "plugins": [
     {
       "name": "postcard",
       "source": "./",
       "description": "Postcard protocol for cross-session AI agent messaging. Ships a CLI, slash commands, a model-invoked skill, a Clerk subagent for inbox triage, and SessionStart / Stop / UserPromptSubmit hooks.",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "license": "MIT",
       "repository": "https://github.com/Open-Agent-Tools/Postcard",
       "keywords": ["messaging", "agents", "ledger", "git", "async", "multi-agent"]

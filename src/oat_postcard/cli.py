@@ -45,8 +45,16 @@ def _reply_title(parent_title: str) -> str:
 
 
 def _cmd_send(args: argparse.Namespace) -> int:
-    from . import ledger, session
+    from . import directory, ledger, session
 
+    if not args.force and not directory.is_active(args.address):
+        print(
+            f"error: address {args.address!r} is not in the live directory. "
+            "Run 'oat-postcard directory' to see active peers; --force to "
+            "send anyway.",
+            file=sys.stderr,
+        )
+        return 1
     sender = session.resolve_or_init()
     pc = ledger.send(sender, args.address, args.title, args.body)
     print(f"sent {pc.id[:8]} to {args.address}")
@@ -54,11 +62,20 @@ def _cmd_send(args: argparse.Namespace) -> int:
 
 
 def _cmd_reply(args: argparse.Namespace) -> int:
-    from . import ledger, session
+    from . import directory, ledger, session
 
     parent = ledger.get_postcard(args.parent_id)
     if parent is None:
         print(f"error: no postcard matching {args.parent_id!r}", file=sys.stderr)
+        return 1
+    if not args.force and not directory.is_active(parent.sender):
+        print(
+            f"error: parent sender {parent.sender!r} is no longer in the live "
+            "directory (their session has ended). Addresses are per-session "
+            "and don't persist across restarts. Use --force to reply into "
+            "the orphan inbox anyway.",
+            file=sys.stderr,
+        )
         return 1
     sender = session.resolve_or_init()
     title = _reply_title(parent.title)
@@ -315,6 +332,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_send.add_argument("address")
     p_send.add_argument("title")
     p_send.add_argument("body")
+    p_send.add_argument(
+        "--force",
+        action="store_true",
+        help="send even if the recipient is not in the live directory",
+    )
     p_send.set_defaults(func=_cmd_send)
 
     p_reply = sub.add_parser(
@@ -323,6 +345,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_reply.add_argument("parent_id", help="parent postcard id (full or 8-char prefix)")
     p_reply.add_argument("body")
+    p_reply.add_argument(
+        "--force",
+        action="store_true",
+        help="reply even if the parent sender is no longer active",
+    )
     p_reply.set_defaults(func=_cmd_reply)
 
     p_inbox = sub.add_parser(
