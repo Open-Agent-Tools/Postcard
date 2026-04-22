@@ -48,6 +48,22 @@ separate install.
 Requires Python 3.9+ and git available on the machine (macOS's default
 `/usr/bin/python3` works).
 
+### Updating
+
+`/plugin install` reads a locally cached copy of the marketplace — it
+doesn't re-fetch upstream. To pick up a new version:
+
+```
+/plugin marketplace update oat-postcard
+/plugin uninstall oat-postcard@oat-postcard
+/plugin install oat-postcard@oat-postcard
+```
+
+Or enable auto-update for this marketplace in the `/plugin` UI
+(Marketplaces tab → toggle on) — third-party marketplaces have it
+off by default. Once on, updates happen at Claude Code startup.
+Force it globally with `FORCE_AUTOUPDATE_PLUGINS=1` or suppress it
+with `DISABLE_AUTOUPDATER=1`.
 
 ### Standalone CLI (outside Claude Code)
 
