@@ -7,21 +7,81 @@ from .ledger import Postcard
 TODO_HEADER = "## Postcards"
 
 
-def _pending_files(address: str) -> list[Path]:
+def _json_files(d: Path) -> list[Path]:
+    if not d.exists():
+        return []
+    return sorted(p for p in d.iterdir() if p.is_file() and p.suffix == ".json")
+
+
+def sweep(address: str, session_id: str) -> int:
+    """Move new inbox postcards into the session's pending staging area."""
+    paths.ensure_root()
     inbox = paths.inbox_for(address)
     if not inbox.exists():
-        return []
-    return sorted(p for p in inbox.iterdir() if p.is_file() and p.suffix == ".json")
+        return 0
+    pending = paths.pending_for(session_id)
+    pending.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for p in _json_files(inbox):
+        p.rename(pending / p.name)
+        count += 1
+    return count
 
 
-def check_inbox(address: str) -> list[Postcard]:
+def pending(session_id: str) -> list[Postcard]:
     cards: list[Postcard] = []
-    for p in _pending_files(address):
+    for p in _json_files(paths.pending_for(session_id)):
         try:
             cards.append(Postcard(**json.loads(p.read_text())))
         except (json.JSONDecodeError, OSError, TypeError):
             continue
     return cards
+
+
+def pending_count(session_id: str) -> int:
+    return len(_json_files(paths.pending_for(session_id)))
+
+
+def _find(session_id: str, postcard_id: str) -> tuple[Path, Postcard] | None:
+    for p in _json_files(paths.pending_for(session_id)):
+        try:
+            data = json.loads(p.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        pid = data.get("id", "")
+        if pid == postcard_id or pid.startswith(postcard_id):
+            try:
+                return p, Postcard(**data)
+            except TypeError:
+                return None
+    return None
+
+
+def file_to_todo(session_id: str, postcard_id: str, todo_path: Path | None = None) -> Postcard | None:
+    """Append a pending postcard to TODO.md and archive it."""
+    found = _find(session_id, postcard_id)
+    if found is None:
+        return None
+    path, card = found
+    _append_todo(todo_path or (Path.cwd() / "TODO.md"), [card])
+    _archive(session_id, path)
+    return card
+
+
+def archive(session_id: str, postcard_id: str) -> Postcard | None:
+    """Mark a pending postcard as processed without filing it."""
+    found = _find(session_id, postcard_id)
+    if found is None:
+        return None
+    path, card = found
+    _archive(session_id, path)
+    return card
+
+
+def _archive(session_id: str, path: Path) -> None:
+    dest = paths.archive_for(session_id)
+    dest.mkdir(parents=True, exist_ok=True)
+    path.rename(dest / path.name)
 
 
 def _append_todo(todo: Path, cards: list[Postcard]) -> None:
@@ -35,18 +95,5 @@ def _append_todo(todo: Path, cards: list[Postcard]) -> None:
         lines.append(f"- [ ] **{pc.title}** — from `{pc.sender}` ({pc.sent_at})")
         for bline in pc.body.splitlines():
             lines.append(f"  > {bline}")
-    todo.write_text(existing + ("\n" if existing and not existing.endswith("\n") else "") + "\n".join(lines) + "\n")
-
-
-def relay(address: str, todo_path: Path | None = None) -> int:
-    cards = check_inbox(address)
-    if not cards:
-        return 0
-    todo = todo_path or (Path.cwd() / "TODO.md")
-    _append_todo(todo, cards)
-
-    read_dir = paths.read_dir_for(address)
-    read_dir.mkdir(parents=True, exist_ok=True)
-    for p in _pending_files(address):
-        p.rename(read_dir / p.name)
-    return len(cards)
+    sep = "\n" if existing and not existing.endswith("\n") else ""
+    todo.write_text(existing + sep + "\n".join(lines) + "\n")

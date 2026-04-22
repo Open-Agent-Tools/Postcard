@@ -12,6 +12,7 @@ def tmp_root(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "INBOX_DIR", root / "inbox")
     monkeypatch.setattr(paths, "DROPBOX_DIR", root / "dropbox")
     monkeypatch.setattr(paths, "SESSIONS_DIR", root / "sessions")
+    monkeypatch.setattr(paths, "PENDING_DIR", root / "pending")
     paths.ensure_root()
     yield root
 

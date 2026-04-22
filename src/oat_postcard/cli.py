@@ -1,5 +1,7 @@
 import argparse
+import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 from . import __version__
@@ -48,16 +50,60 @@ def _cmd_whoami(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_clerk_check(args: argparse.Namespace) -> int:
+def _cmd_clerk_sweep(args: argparse.Namespace) -> int:
     from . import clerk, session
 
-    address = args.address or session.current_address()
-    if not address:
+    sid = session.current_session_id()
+    addr = session.current_address()
+    if not addr:
         return 0
+    n = clerk.sweep(addr, sid)
+    if n and not args.quiet:
+        print(f"{n} new postcard(s) staged")
+    return 0
+
+
+def _cmd_clerk_pending(args: argparse.Namespace) -> int:
+    from . import clerk, session
+
+    sid = session.current_session_id()
+    if args.count:
+        print(clerk.pending_count(sid))
+        return 0
+    cards = clerk.pending(sid)
+    if args.json:
+        print(json.dumps([asdict(c) for c in cards], indent=2, ensure_ascii=False))
+        return 0
+    if not cards:
+        print("(no pending postcards)")
+        return 0
+    for c in cards:
+        print(f"{c.id[:8]}  {c.sent_at}  from {c.sender}  {c.title}")
+    return 0
+
+
+def _cmd_clerk_file(args: argparse.Namespace) -> int:
+    from . import clerk, session
+
+    sid = session.current_session_id()
     todo = Path(args.todo) if args.todo else None
-    count = clerk.relay(address, todo_path=todo)
-    if count:
-        print(f"{count} new postcard(s) for {address}")
+    card = clerk.file_to_todo(sid, args.id, todo_path=todo)
+    if card is None:
+        print(f"error: no pending postcard matching {args.id}", file=sys.stderr)
+        return 1
+    print(f"filed {card.id[:8]} ({card.title}) to TODO")
+    return 0
+
+
+def _cmd_clerk_archive(args: argparse.Namespace) -> int:
+    from . import clerk, session
+
+    sid = session.current_session_id()
+    card = clerk.archive(sid, args.id)
+    if card is None:
+        print(f"error: no pending postcard matching {args.id}", file=sys.stderr)
+        return 1
+    print(f"archived {card.id[:8]} ({card.title})")
     return 0
 
 
@@ -99,10 +145,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_who = sub.add_parser("whoami", help="print this session's address")
     p_who.set_defaults(func=_cmd_whoami)
 
-    p_clerk = sub.add_parser("clerk-check", help="relay new mail into the local TODO.md")
-    p_clerk.add_argument("--address", default=None)
-    p_clerk.add_argument("--todo", default=None, help="path to TODO.md (default: ./TODO.md)")
-    p_clerk.set_defaults(func=_cmd_clerk_check)
+    p_sweep = sub.add_parser("clerk-sweep", help="move new inbox mail into this session's pending staging (hook use)")
+    p_sweep.add_argument("--quiet", action="store_true")
+    p_sweep.set_defaults(func=_cmd_clerk_sweep)
+
+    p_pending = sub.add_parser("clerk-pending", help="list pending postcards for this session")
+    p_pending.add_argument("--json", action="store_true", help="emit full JSON records")
+    p_pending.add_argument("--count", action="store_true", help="print only the count")
+    p_pending.set_defaults(func=_cmd_clerk_pending)
+
+    p_file = sub.add_parser("clerk-file", help="file a pending postcard into TODO.md and archive it")
+    p_file.add_argument("id", help="postcard id (full or 8-char prefix)")
+    p_file.add_argument("--todo", default=None, help="path to TODO.md (default: ./TODO.md)")
+    p_file.set_defaults(func=_cmd_clerk_file)
+
+    p_arc = sub.add_parser("clerk-archive", help="archive a pending postcard without filing")
+    p_arc.add_argument("id", help="postcard id (full or 8-char prefix)")
+    p_arc.set_defaults(func=_cmd_clerk_archive)
 
     p_init = sub.add_parser("session-init", help="initialize this session in the directory (hook use)")
     p_init.add_argument("--session-id", default=None)

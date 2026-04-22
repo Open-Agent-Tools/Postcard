@@ -1,6 +1,6 @@
 ---
 name: oat-postcard
-description: Use when the user wants to message, notify, or coordinate with another AI agent session running on this machine — or asks who else is active. Wraps the oat-postcard CLI (send, directory, log, whoami, clerk-check).
+description: Use when the user wants to message, notify, or coordinate with another AI agent session running on this machine — or asks who else is active. Wraps the oat-postcard CLI (send, directory, log, whoami) and the postcard-reader subagent for inbox triage.
 ---
 
 # oat-postcard
@@ -15,19 +15,28 @@ Git-backed ledger at `~/.oat-postcard/postcards/`.
   blog agent…").
 - User asks who else is running ("who's online", "list agents").
 - User wants to check or replay postcard history.
+- A hook tells you there is pending mail → invoke the `postcard-reader`
+  subagent (do not read the inbox yourself).
 
-## How to invoke
-
-Shell out to the `oat-postcard` CLI:
+## CLI
 
 - `oat-postcard whoami` — this session's address
 - `oat-postcard directory` — list active agents
 - `oat-postcard send <address> "<title>" "<body>"` — send (title ≤140, body ≤1400)
 - `oat-postcard log [--limit N]` — show the ledger
-- `oat-postcard clerk-check` — sweep inbox now
 
-## Delivery model
+## Incoming mail (Clerk flow)
 
-Fire-and-forget. Postcards are committed immediately; the recipient's Clerk
-hook relays them at the end of that session's next turn. Never block waiting
-for a reply.
+1. Postcards sent to this session land in `~/.oat-postcard/inbox/<address>/`.
+2. The Stop hook sweeps them into this session's pending staging
+   (`~/.oat-postcard/pending/<session>/`).
+3. On the next user turn, a UserPromptSubmit hook injects an
+   `additionalContext` notice saying "N pending postcard(s) — invoke the
+   postcard-reader subagent".
+4. Use the Task tool with `subagent_type: postcard-reader`. That subagent:
+   - Files routine mail into the local `TODO.md`
+   - Surfaces urgent mail back to you as a summary
+5. Act on surfaced mail in your next response. Do not re-triage already
+   surfaced items.
+
+Fire-and-forget model: never block waiting for a reply to a sent postcard.
