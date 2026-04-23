@@ -146,6 +146,10 @@ def _cmd_log(args: argparse.Namespace) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
+    def _fmt(pc: "ledger.Postcard") -> str:
+        tag = f" ↳{pc.reply_to[:8]}" if pc.reply_to else ""
+        return f"{pc.sent_at}  {pc.sender} -> {pc.recipient}  {pc.title}{tag}"
+
     cards = ledger.log()
     filtered: list[ledger.Postcard] = []
     for pc in cards:
@@ -162,13 +166,35 @@ def _cmd_log(args: argparse.Namespace) -> int:
         if args.limit and len(filtered) >= args.limit:
             break
 
+    if args.watch:
+        # Tail mode: print initial window oldest-first so new arrivals
+        # stream on naturally at the bottom.
+        filtered.reverse()
+
     if not filtered:
-        print("(no matching postcards)" if (since or until) else "(ledger empty)")
+        if not args.watch:
+            print("(no matching postcards)" if (since or until) else "(ledger empty)")
+    else:
+        for pc in filtered:
+            print(_fmt(pc))
+
+    if not args.watch:
         return 0
-    for pc in filtered:
-        tag = f" ↳{pc.reply_to[:8]}" if pc.reply_to else ""
-        print(f"{pc.sent_at}  {pc.sender} -> {pc.recipient}  {pc.title}{tag}")
-    return 0
+
+    seen = {pc.id for pc in filtered}
+    try:
+        while True:
+            time.sleep(args.interval)
+            current = ledger.log()
+            # ledger.log() returns newest-first; reverse to stream
+            # chronologically.
+            for pc in reversed(current):
+                if pc.id in seen:
+                    continue
+                seen.add(pc.id)
+                print(_fmt(pc), flush=True)
+    except KeyboardInterrupt:
+        return 0
 
 
 def _cmd_whoami(args: argparse.Namespace) -> int:
@@ -360,7 +386,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--limit", type=int, default=20, help="number of entries (default 20)"
     )
     p_inbox.add_argument(
-        "--watch", action="store_true", help="tail mode: print new arrivals as they land"
+        "--watch",
+        action="store_true",
+        help="tail mode: print new arrivals as they land",
     )
     p_inbox.add_argument(
         "--interval",
@@ -373,7 +401,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_dir = sub.add_parser("directory", help="list active agents")
     p_dir.set_defaults(func=_cmd_directory)
 
-    p_log = sub.add_parser("log", help="show postcard history")
+    p_log = sub.add_parser(
+        "log",
+        help="show postcard history (passive; use --watch to tail the full ledger)",
+    )
     p_log.add_argument("--limit", type=int, default=None)
     p_log.add_argument(
         "--since",
@@ -384,6 +415,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--until",
         default=None,
         help="only show postcards older than this (e.g. 1h, 24h, 7d, or ISO timestamp)",
+    )
+    p_log.add_argument(
+        "--watch",
+        action="store_true",
+        help="tail mode: print new arrivals across the full ledger as they land",
+    )
+    p_log.add_argument(
+        "--interval",
+        type=float,
+        default=2.0,
+        help="poll interval in seconds when --watch (default 2.0)",
     )
     p_log.set_defaults(func=_cmd_log)
 

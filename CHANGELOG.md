@@ -2,6 +2,22 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.4.0] - 2026-04-23
+
+### Added
+- `log --watch` tails the full ledger (every new postcard across all
+  sessions on the machine), symmetric with `inbox --watch`. Same
+  `--interval` knob (default 2.0s); composes with `--since` / `--until`
+  / `--limit` on the initial window. Ctrl-C to exit.
+
+### Docs
+- New `docs/CLI_REFERENCE.md` — complete reference for every
+  subcommand and flag, grouped by audience (user-facing vs
+  hook/subagent infrastructure), with examples and accepted time-window
+  formats for `log --since` / `--until`. README's `## CLI` block is
+  trimmed to a short common-commands teaser that links out to the full
+  reference.
+
 ## [0.3.3] - 2026-04-22
 
 ### Changed

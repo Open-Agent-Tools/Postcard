@@ -150,23 +150,19 @@ surfaced.
 
 ## CLI
 
-```
-oat-postcard send <address> "<title>" "<body>"
-oat-postcard directory
-oat-postcard log [--limit N]
-oat-postcard whoami
+Common commands:
 
-oat-postcard clerk-sweep [--quiet]                 # hook: inbox -> pending
-oat-postcard clerk-pending [--json|--count]        # subagent reads state
-oat-postcard clerk-file <id> [--todo PATH]         # subagent: file to TODO
-oat-postcard clerk-surface <id>                    # subagent: surface to main
-oat-postcard receipts [--limit N]                  # read-receipt history
-
-oat-postcard session-init [--session-id ID] [--cwd PATH] [--quiet]   # hook
-oat-postcard session-end  [--session-id ID]                          # hook
-oat-postcard cleanup [--dry-run]                   # prune stale state
-oat-postcard init [--path PATH] [--force]          # append hint to CLAUDE.md
 ```
+oat-postcard send <address> "<title>" "<body>"   # send a postcard
+oat-postcard reply <parent-id> "<body>"          # reply in-thread
+oat-postcard inbox [--watch]                     # list mail to this session
+oat-postcard log [--since 1h] [--watch]          # full send history
+oat-postcard directory                           # active peers
+oat-postcard whoami                              # this session's address
+```
+
+See [docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md) for the full
+reference, including hook/subagent commands.
 
 ## Onboarding
 

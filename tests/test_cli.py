@@ -103,6 +103,90 @@ def test_inbox_cmd_shows_reply_marker(tmp_root, session_env, capsys):
     assert f"↳{parent.id[:8]}" in out
 
 
+def test_log_watch_prints_new_arrivals(tmp_root, session_env, capsys, monkeypatch):
+    # Seed one postcard already in the ledger.
+    ledger.send("alpha", "bravo", "seeded", "body")
+
+    # Stub time.sleep to inject a new postcard on the first poll and
+    # raise KeyboardInterrupt on the second so the watch loop exits.
+    calls = {"n": 0}
+
+    def fake_sleep(_interval):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            ledger.send("alpha", "bravo", "fresh", "body")
+            return
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.time, "sleep", fake_sleep)
+
+    rc = cli.main(["log", "--watch", "--interval", "0"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "seeded" in out
+    assert "fresh" in out
+
+
+def test_log_watch_tails_across_all_senders(tmp_root, session_env, capsys, monkeypatch):
+    # Unlike inbox, log --watch is unfiltered: it shows postcards to
+    # anyone, not just this session.
+    calls = {"n": 0}
+
+    def fake_sleep(_interval):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            ledger.send("peer-a", "someone-else", "cross-traffic", "body")
+            return
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.time, "sleep", fake_sleep)
+
+    rc = cli.main(["log", "--watch", "--interval", "0"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "cross-traffic" in out
+
+
+def test_log_watch_with_since_prints_window_then_tails(
+    tmp_root, session_env, capsys, monkeypatch
+):
+    ledger.send("alpha", "bravo", "in-window", "body")
+
+    calls = {"n": 0}
+
+    def fake_sleep(_interval):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            ledger.send("alpha", "bravo", "arrived", "body")
+            return
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.time, "sleep", fake_sleep)
+
+    rc = cli.main(["log", "--watch", "--since", "1h", "--interval", "0"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "in-window" in out
+    assert "arrived" in out
+
+
+def test_log_watch_empty_ledger_suppresses_empty_marker(
+    tmp_root, session_env, capsys, monkeypatch
+):
+    # Ensure the "(ledger empty)" / "(no matching postcards)" sentinel
+    # does not print when we're about to tail.
+    def fake_sleep(_interval):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.time, "sleep", fake_sleep)
+
+    rc = cli.main(["log", "--watch", "--interval", "0"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "(ledger empty)" not in out
+    assert "(no matching postcards)" not in out
+
+
 def test_log_since_filters_by_time(tmp_root, session_env, capsys):
     ledger.send("alpha", "bravo", "recent", "body")
 
