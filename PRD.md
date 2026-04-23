@@ -81,7 +81,7 @@ project on the machine.
 ## 5. User Workflow Example
 
 - Session A (Personal Blog): Starts up as `vivid-blue-mountain`.
-- Session B (SuperSwink-Core): Starts up as `rusty-logic-gate`.
+- Session B (Core Library): Starts up as `rusty-logic-gate`.
 - Cross-Talk: The Blog agent runs `oat-postcard directory`, sees
   `rusty-logic-gate` is active, and sends a postcard:
   "Title: Documentation Update | Body: I'm writing a post about the new

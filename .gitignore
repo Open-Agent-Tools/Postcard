@@ -205,3 +205,196 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# oat-postcard triage sink
+TODO.md
+
+# ----------------------------------------------------------------------
+# Operating system cruft
+# ----------------------------------------------------------------------
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.fseventsd
+Icon?
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.stackdump
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ----------------------------------------------------------------------
+# Editors and IDEs
+# ----------------------------------------------------------------------
+
+# Vim
+*.swp
+*.swo
+*.swn
+.*.sw?
+[._]s[a-v][a-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+tags
+[._]*.un~
+
+# Emacs
+\#*\#
+.\#*
+*~
+.emacs.desktop
+.emacs.desktop.lock
+auto-save-list
+tramp
+.elc
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+*.code-workspace
+.history/
+.ionide/
+
+# JetBrains (IntelliJ, PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+
+# TextMate
+*.tmproj
+*.tmproject
+tmtags
+
+# Kate
+.kate-swp
+.swp.*
+
+# ----------------------------------------------------------------------
+# Shell / terminal artifacts
+# ----------------------------------------------------------------------
+
+nohup.out
+core
+core.[0-9]*
+*.core
+*.dump
+.bash_history
+.zsh_history
+.lesshst
+.python_history
+.node_repl_history
+.rediscli_history
+.sqlite_history
+
+# ----------------------------------------------------------------------
+# Generic temp / backup files
+# ----------------------------------------------------------------------
+
+*.bak
+*.backup
+*.orig
+*.rej
+*.tmp
+*.temp
+
+# ----------------------------------------------------------------------
+# Direnv / asdf / tool-version overrides (local machine state)
+# ----------------------------------------------------------------------
+
+.direnv/
+.tool-versions
+
+# ----------------------------------------------------------------------
+# AI coding agents
+# ----------------------------------------------------------------------
+
+# Claude Code — local/user state only. `.claude-plugin/` (plugin manifest)
+# and `CLAUDE.md` (team-shared) are intentionally tracked and NOT matched
+# by these patterns.
+.claude/
+CLAUDE.local.md
+.claudeignore
+
+# Cursor (IDE-level AI state). `.cursorignore` is handled above.
+.cursor/
+.cursor-tutor/
+
+# Aider
+.aider*
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.v3/
+.aider.llm.history
+
+# Continue
+.continue/
+
+# Windsurf / Codeium
+.windsurf/
+.windsurfrules
+.codeium/
+.codeiumignore
+
+# Cody (Sourcegraph)
+.sourcegraph/
+.cody/
+
+# Cline / Roo Code
+.cline/
+.clinerules
+.roo/
+.roomodes
+
+# GitHub Copilot / Copilot Chat local caches
+.copilot/
+.github-copilot/
+.copilotignore
+
+# Tabnine
+.tabnine/
+.tabnine_root
+
+# Zed assistant / Devin / generic AI agent scratch
+.zed/
+.devin/
+.ai/
+.agent/
+*.ai-log
+ai-session-*.log
+
+# Chat / transcript dumps that agents sometimes drop at repo root
+chat-history-*.md
+agent-transcript-*.md
