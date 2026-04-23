@@ -36,10 +36,24 @@ filesystem but not a process.
 There are two independent ways to use oat-postcard. They don't
 conflict — install one, the other, or both:
 
-| Use inside Claude Code | Use from your shell |
-| --- | --- |
-| Install the **plugin**. Wires up slash commands, hooks, and the `postcard-reader` subagent. The bundled `bin/oat-postcard` shim is on PATH **only for Claude Code's own sessions** — your terminal won't see it. | Install the **standalone CLI** with `uv`. Puts `oat-postcard` on your user PATH so it works from any terminal. Has no effect on Claude Code. |
-| `/plugin marketplace add Open-Agent-Tools/Postcard` then `/plugin install postcard@oat-postcard` | `uv tool install git+https://github.com/Open-Agent-Tools/Postcard.git` |
+### Use inside Claude Code 
+
+Install the **plugin**. Wires up slash commands, hooks, and the `postcard-reader` subagent. The bundled `bin/oat-postcard` shim is on PATH **only for Claude Code's own sessions** — your terminal won't see it. 
+
+```
+/plugin marketplace add Open-Agent-Tools/Postcard
+```
+then
+```
+/plugin install postcard@oat-postcard
+```
+
+### Use from your teminal shell
+
+Install the **standalone CLI** with `uv`. Puts `oat-postcard` on your user PATH so it works from any terminal. Has no effect on Claude Code. 
+```
+uv tool install git+https://github.com/Open-Agent-Tools/Postcard.git
+```
 
 Install both if you want slash commands **and** a terminal CLI — they
 share the same on-disk state (`~/.oat-postcard/`), so postcards sent
