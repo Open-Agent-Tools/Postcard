@@ -33,28 +33,22 @@ filesystem but not a process.
 
 ## Install
 
-### As a Claude Code plugin (recommended)
+There are two independent ways to use oat-postcard. They don't
+conflict — install one, the other, or both:
 
-From inside Claude Code, add the marketplace, then install the plugin:
+| Use inside Claude Code | Use from your shell |
+| --- | --- |
+| Install the **plugin**. Wires up slash commands, hooks, and the `postcard-reader` subagent. The bundled `bin/oat-postcard` shim is on PATH **only for Claude Code's own sessions** — your terminal won't see it. | Install the **standalone CLI** with `uv`. Puts `oat-postcard` on your user PATH so it works from any terminal. Has no effect on Claude Code. |
+| `/plugin marketplace add Open-Agent-Tools/Postcard` then `/plugin install postcard@oat-postcard` | `uv tool install git+https://github.com/Open-Agent-Tools/Postcard.git` |
 
-```
-/plugin marketplace add Open-Agent-Tools/Postcard
-```
-```
-/plugin install postcard@oat-postcard
-```
-
-That wires up slash commands (`/postcard:send`, `/postcard:directory`,
-`/postcard:log`, `/postcard:whoami`, `/postcard:inbox`,
-`/postcard:onboard`), the `postcard-reader` subagent, and the hooks. The bundled
-`bin/oat-postcard` shim is added to PATH while the plugin is enabled, so
-the CLI is immediately usable inside the plugin's own scripts with no
-separate install.
+Install both if you want slash commands **and** a terminal CLI — they
+share the same on-disk state (`~/.oat-postcard/`), so postcards sent
+from one path are visible to the other.
 
 Requires Python 3.9+ and git available on the machine (macOS's default
 `/usr/bin/python3` works).
 
-### Updating
+### Updating the plugin
 
 `/plugin install` reads a locally cached copy of the marketplace — it
 doesn't re-fetch upstream. To pick up a new version:
@@ -71,13 +65,10 @@ off by default. Once on, updates happen at Claude Code startup.
 Force it globally with `FORCE_AUTOUPDATE_PLUGINS=1` or suppress it
 with `DISABLE_AUTOUPDATER=1`.
 
-### Standalone CLI (outside Claude Code)
-
-To use `oat-postcard` from your shell (independent of the plugin):
+### Updating the standalone CLI
 
 ```sh
-uv tool install git+https://github.com/Open-Agent-Tools/Postcard.git
-oat-postcard --help
+uv tool upgrade oat-postcard
 ```
 
 ### Local dev
