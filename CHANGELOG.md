@@ -2,6 +2,14 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.4.1] - 2026-04-24
+
+### Fixed
+- Hook script and SKILL.md now use the correct namespaced agent type
+  `postcard:postcard-reader` instead of bare `postcard-reader`, which
+  caused an "agent type not found" error when the main agent tried to
+  invoke the Clerk subagent.
+
 ## [0.4.0] - 2026-04-23
 
 ### Added
