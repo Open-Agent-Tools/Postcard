@@ -41,7 +41,7 @@ n = sys.argv[1]
 msg = (
     f"postcard: {n} pending postcard(s) from other agent sessions. "
     "Before answering, invoke the postcard-reader subagent via the Task tool "
-    "(subagent_type='postcard-reader') to triage them. The subagent will file "
+    "(subagent_type='postcard:postcard-reader') to triage them. The subagent will file "
     "routine mail into TODO.md and surface urgent mail back for your response."
 )
 print(json.dumps({

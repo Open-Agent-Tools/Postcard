@@ -75,7 +75,7 @@ Well-shaped bodies look like:
 3. On the next user turn, a UserPromptSubmit hook injects an
    `additionalContext` notice: "N pending postcard(s) — invoke the
    postcard-reader subagent".
-4. Invoke the Task tool with `subagent_type: postcard-reader`. The
+4. Invoke the Task tool with `subagent_type: postcard:postcard-reader`. The
    subagent:
    - Files informational mail into the local `TODO.md`.
    - Surfaces questions, requests expecting a response, and urgent
