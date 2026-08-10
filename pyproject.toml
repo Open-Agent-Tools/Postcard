@@ -18,6 +18,14 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/oat_postcard"]
 
+[tool.ruff.lint]
+# Pin to ruff's pre-0.16 default rule set (E4, E7, E9, F). 0.16 changed its
+# implicit default when unconfigured to a much broader set, which turned a
+# routine dependency bump into a lint-policy change unrelated to real code
+# quality. Pinning here keeps future ruff upgrades from doing that silently
+# again; broadening the rule set is a deliberate choice, made here.
+select = ["E4", "E7", "E9", "F"]
+
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
