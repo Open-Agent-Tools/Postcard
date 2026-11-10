@@ -70,3 +70,23 @@ def test_resolve_target_defaults_to_claude_md_when_neither_exists(tmp_path):
 def test_resolve_target_respects_explicit_path(tmp_path):
     explicit = tmp_path / "custom.md"
     assert project.resolve_target(explicit, tmp_path) == explicit
+
+
+def test_resolve_target_can_prefer_agents_md_for_new_file(tmp_path):
+    assert (
+        project.resolve_target(None, tmp_path, prefer_agents_md=True)
+        == tmp_path / "AGENTS.md"
+    )
+
+
+def test_resolve_target_prefers_existing_claude_md_even_on_other_hosts(tmp_path):
+    (tmp_path / "CLAUDE.md").write_text("")
+    assert (
+        project.resolve_target(None, tmp_path, prefer_agents_md=True)
+        == tmp_path / "CLAUDE.md"
+    )
+
+
+def test_block_is_host_neutral():
+    assert "Claude Code sessions" not in project.BLOCK
+    assert "oat-postcard directory" in project.BLOCK

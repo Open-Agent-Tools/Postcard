@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -9,7 +10,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import __version__
+from . import __version__, hosts, paths
 
 _DURATION_RE = re.compile(r"(?i)^\s*(\d+)\s*([smhd])\s*$")
 
@@ -130,9 +131,13 @@ def _cmd_directory(args: argparse.Namespace) -> int:
         print("(no active agents)")
         return 0
     width = max(len(e.address) for e in entries)
+    hwidth = max(len(e.host) for e in entries)
     for e in entries:
         marker = "*" if e.address == me else " "
-        print(f"{marker} {e.address:<{width}}  pid={e.pid:<7}  {e.cwd}")
+        print(
+            f"{marker} {e.address:<{width}}  {e.host:<{hwidth}}  "
+            f"pid={e.pid:<7}  {e.cwd}"
+        )
     return 0
 
 
@@ -301,9 +306,132 @@ def _cmd_session_init(args: argparse.Namespace) -> int:
         session_id=args.session_id,
         cwd=Path(args.cwd) if args.cwd else None,
         pid=args.pid,
+        host=hosts.detect_host(hint=args.host),
     )
     if not args.quiet:
         print(addr)
+    return 0
+
+
+def _cmd_hook(args: argparse.Namespace) -> int:
+    """Host-agnostic lifecycle hook. Always exits 0 (hooks are fail-open)."""
+    try:
+        out = _run_hook(args)
+    except Exception as e:  # pragma: no cover - defensive, hooks must not fail
+        if os.environ.get("OAT_POSTCARD_DEBUG"):
+            print(f"oat-postcard hook error: {e!r}", file=sys.stderr)
+        return 0
+    if out is not None:
+        print(out)
+    return 0
+
+
+def _run_hook(args: argparse.Namespace) -> str | None:
+    from . import clerk, ledger, session
+
+    text = "" if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()
+    hi = hosts.parse_hook_input(text, host_hint=args.host)
+    event = args.event
+
+    # Make the session id visible to current_session_id() for the rest of
+    # this process, so clerk/session helpers key off the right session.
+    if hi.session_id:
+        os.environ["OAT_POSTCARD_SESSION"] = hi.session_id
+
+    if event == hosts.EV_SESSION_END:
+        if hi.session_id:
+            session.end_session(session_id=hi.session_id)
+        else:
+            try:
+                session.end_session()
+            except RuntimeError:
+                pass
+        return hosts.empty_output(hi.host)
+
+    # session-start, stop, prompt all (lazily) register the session: not
+    # every host fires SessionStart for resumed or pre-existing sessions.
+    ledger.init_ledger()
+    addr = session.init_session(
+        session_id=hi.session_id,
+        cwd=Path(hi.cwd) if hi.cwd else None,
+        pid=args.pid,
+        host=hi.host,
+    )
+    sid = hi.session_id or session.current_session_id()
+
+    if event == hosts.EV_SESSION_START:
+        return hosts.empty_output(hi.host)
+
+    if event == hosts.EV_STOP:
+        clerk.sweep(addr, sid)
+        if hi.host not in hosts.STOP_NUDGE_HOSTS:
+            return hosts.empty_output(hi.host)
+        n = clerk.pending_count(sid)
+        if n == 0 or hi.stop_hook_active:
+            return hosts.empty_output(hi.host)
+        if not hosts.should_nudge_once(paths.pending_for(sid)):
+            return hosts.empty_output(hi.host)
+        msg = hosts.pending_notice(hi.host, n, cli=hosts.cli_path())
+        return hosts.format_nudge(hi.host, event, msg) or hosts.empty_output(hi.host)
+
+    if event == hosts.EV_PROMPT:
+        n = clerk.pending_count(sid)
+        if n == 0:
+            return hosts.empty_output(hi.host)
+        msg = hosts.pending_notice(hi.host, n, cli=hosts.cli_path())
+        return hosts.format_nudge(hi.host, event, msg) or hosts.empty_output(hi.host)
+
+    return hosts.empty_output(hi.host)
+
+
+def _cmd_setup(args: argparse.Namespace) -> int:
+    """Install the pieces a host cannot load straight from the plugin dir."""
+    host = args.host
+    if host == hosts.CODEX:
+        root = hosts.plugin_root()
+        if root is None:
+            print(
+                "error: cannot locate the plugin checkout (agents/postcard-reader.md); "
+                "run setup from the plugin's bin/oat-postcard shim",
+                file=sys.stderr,
+            )
+            return 1
+        md = (root / "agents" / "postcard-reader.md").read_text()
+        toml_text = hosts.codex_agent_toml(md)
+        codex_home = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
+        dest = codex_home / "agents" / "postcard-reader.toml"
+        if args.dry_run:
+            print(f"would write {dest}")
+            print(toml_text)
+            return 0
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(toml_text)
+        print(f"wrote {dest}")
+        print(
+            "Codex notes: agent shells run in a sandbox that cannot write to "
+            f"{paths.ROOT} by default. Add it to writable_roots in "
+            "~/.codex/config.toml ([sandbox_workspace_write]) or set "
+            "OAT_POSTCARD_HOME to a writable location."
+        )
+        return 0
+    notes = {
+        hosts.CLAUDE: "Nothing to install: /plugin install postcard@oat-postcard wires everything.",
+        hosts.GROK: (
+            "Nothing to install: Grok Build loads this plugin's Claude-format "
+            "manifest, hooks, skill and subagent directly (~/.grok/plugins or "
+            "--plugin-dir). Pending-mail nudges arrive via the Stop hook."
+        ),
+        hosts.COPILOT: (
+            "Nothing to install: `copilot plugin marketplace add Open-Agent-Tools/Postcard` "
+            "then `copilot plugin install postcard@oat-postcard`. Allow "
+            f"`--add-dir {paths.ROOT}` and `--allow-tool 'shell(git:*)'` or approve on first use."
+        ),
+        hosts.AGY: (
+            "Nothing to install: `agy plugin install <path-or-github-url>`. "
+            f"Allow writes to {paths.ROOT} (permissions.allow write_file) on first use."
+        ),
+    }
+    print(notes.get(host, f"no setup steps for host {host!r}"))
     return 0
 
 
@@ -317,9 +445,11 @@ def _cmd_session_end(args: argparse.Namespace) -> int:
 def _cmd_init(args: argparse.Namespace) -> int:
     from . import project
 
+    host = hosts.detect_host()
     target = project.resolve_target(
         Path(args.path) if args.path else None,
         Path.cwd(),
+        prefer_agents_md=host not in (hosts.CLAUDE, hosts.SHELL),
     )
     result = project.init_doc(target, force=args.force)
     if result is project.InitResult.CREATED:
@@ -468,7 +598,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_init = sub.add_parser(
         "session-init", help="initialize this session in the directory (hook use)"
     )
-    p_init.add_argument("--session-id", default=None)
+    p_init.add_argument(
+        "--session-id", default=None, help="override the host session env var"
+    )
     p_init.add_argument("--cwd", default=None)
     p_init.add_argument(
         "--pid",
@@ -477,7 +609,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="PID to record in the directory entry (default: ppid of this process)",
     )
     p_init.add_argument("--quiet", action="store_true")
+    p_init.add_argument(
+        "--host",
+        default=hosts.AUTO,
+        help="host CLI to record (claude, codex, copilot, grok, agy, shell; default auto-detect)",
+    )
     p_init.set_defaults(func=_cmd_session_init)
+
+    p_hook = sub.add_parser(
+        "hook",
+        help="host-agnostic lifecycle hook: reads the host's JSON payload on stdin (hook use)",
+    )
+    p_hook.add_argument("event", choices=hosts.EVENTS)
+    p_hook.add_argument(
+        "--host",
+        default=hosts.AUTO,
+        help="host CLI dialect (default auto-detect from env + payload)",
+    )
+    p_hook.add_argument(
+        "--pid",
+        type=int,
+        default=None,
+        help="PID to record for liveness (hook.sh passes the host CLI's $PPID)",
+    )
+    p_hook.set_defaults(func=_cmd_hook)
+
+    p_setup = sub.add_parser(
+        "setup",
+        help="install host-specific pieces that cannot be loaded from the plugin dir",
+    )
+    p_setup.add_argument("host", choices=[h for h in hosts.HOSTS if h != hosts.SHELL])
+    p_setup.add_argument("--dry-run", action="store_true")
+    p_setup.set_defaults(func=_cmd_setup)
 
     p_end = sub.add_parser(
         "session-end", help="remove this session from the directory (hook use)"
@@ -494,10 +657,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_proj = sub.add_parser(
         "init",
-        help="append a coordination hint to this project's CLAUDE.md (or AGENTS.md)",
+        help="append a coordination hint to this project's CLAUDE.md or AGENTS.md",
     )
     p_proj.add_argument(
-        "--path", default=None, help="target file (default: ./CLAUDE.md or ./AGENTS.md)"
+        "--path",
+        default=None,
+        help="target file (default: ./CLAUDE.md, else ./AGENTS.md, else a new file: "
+        "CLAUDE.md under Claude Code, AGENTS.md under other hosts)",
     )
     p_proj.add_argument(
         "--force", action="store_true", help="rewrite the block if already present"

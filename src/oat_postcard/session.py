@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import addressing, directory, paths
+from . import addressing, directory, hosts, paths
 
 STALE_DROPBOX_SECONDS = 5 * 60
 
@@ -25,7 +25,9 @@ class CleanupResult:
 
 
 def current_session_id() -> str:
-    sid = os.environ.get("CLAUDE_SESSION_ID") or os.environ.get("OAT_POSTCARD_SESSION")
+    """Resolve this session's id. Order: host env vars (see
+    ``hosts.SESSION_ENV_VARS``), PID-chain walk against the directory, TTY."""
+    sid = hosts.session_id_from_env()
     if sid:
         return sid
     sid = _resolve_by_pid_chain()
@@ -40,15 +42,17 @@ def current_session_id() -> str:
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
     raise RuntimeError(
-        "no session id: set CLAUDE_SESSION_ID, run from a terminal with a TTY, "
-        "or ensure SessionStart has registered this session in the directory"
+        "no session id: set OAT_POSTCARD_SESSION (or your host's session env var, "
+        "e.g. CLAUDE_SESSION_ID / CODEX_SESSION_ID / GROK_SESSION_ID), run from a "
+        "terminal with a TTY, or ensure the session-start hook has registered "
+        "this session in the directory"
     )
 
 
 def _resolve_by_pid_chain(max_hops: int = 20) -> str | None:
     """Walk up the process tree, find an ancestor PID that matches a live
     directory entry, and return that entry's session_id. Lets the CLI
-    identify its own session when CLAUDE_SESSION_ID isn't in the env.
+    identify its own session when no session env var is set.
     """
     try:
         active = directory.list_active(prune=False)
@@ -106,6 +110,7 @@ def init_session(
     session_id: str | None = None,
     cwd: Path | None = None,
     pid: int | None = None,
+    host: str | None = None,
 ) -> str:
     paths.ensure_root()
     cleanup()
@@ -125,6 +130,7 @@ def init_session(
         session_id=sid,
         pid=pid if pid is not None else os.getppid(),
         cwd=cwd or Path.cwd(),
+        host=host or hosts.detect_host(),
     )
     return addr
 

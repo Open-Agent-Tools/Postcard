@@ -1,6 +1,18 @@
+import os
 from pathlib import Path
 
-ROOT = Path.home() / ".oat-postcard"
+
+def _root() -> Path:
+    """State root. ``OAT_POSTCARD_HOME`` overrides the default so sandboxed
+    hosts (Codex workspace-write, Grok workspace sandbox) can point it at a
+    writable location."""
+    override = os.environ.get("OAT_POSTCARD_HOME")
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".oat-postcard"
+
+
+ROOT = _root()
 DIRECTORY_DIR = ROOT / "directory"
 POSTCARDS_DIR = ROOT / "postcards"
 INBOX_DIR = ROOT / "inbox"

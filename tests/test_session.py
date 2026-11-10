@@ -49,3 +49,22 @@ def test_resolve_by_pid_chain_returns_none_when_no_match(tmp_root, monkeypatch):
     monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
     monkeypatch.delenv("OAT_POSTCARD_SESSION", raising=False)
     assert session._resolve_by_pid_chain() is None
+
+
+def test_current_session_id_from_codex_and_grok_env(tmp_root, monkeypatch):
+    monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
+    monkeypatch.setenv("CODEX_SESSION_ID", "codex-root")
+    monkeypatch.setenv("CODEX_THREAD_ID", "codex-sub")
+    assert session.current_session_id() == "codex-root"
+    monkeypatch.delenv("CODEX_SESSION_ID")
+    assert session.current_session_id() == "codex-sub"
+    monkeypatch.delenv("CODEX_THREAD_ID")
+    monkeypatch.setenv("GROK_SESSION_ID", "grok-1")
+    assert session.current_session_id() == "grok-1"
+
+
+def test_init_session_records_detected_host(tmp_root, monkeypatch):
+    monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
+    monkeypatch.setenv("GROK_SESSION_ID", "grok-1")
+    addr = session.init_session()
+    assert directory.resolve(addr).host == "grok"

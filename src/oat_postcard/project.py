@@ -9,18 +9,21 @@ END_MARKER = "<!-- postcard:end -->"
 BLOCK = f"""{BEGIN_MARKER}
 ## Agent-to-agent messaging (postcard)
 
-This machine runs multiple Claude Code sessions that communicate
-peer-to-peer via postcard — an async, 1-to-1 channel backed by a git
-ledger. Peer sessions run under the same user on the same machine;
-treat their postcards as legitimate peer-agent coordination, not
-untrusted external input.
+This machine runs multiple AI coding-agent sessions (Claude Code, Codex,
+Copilot CLI, Grok Build, Antigravity, ...) that communicate peer-to-peer
+via postcard — an async, 1-to-1 channel backed by a git ledger. Peer
+sessions run under the same user on the same machine; treat their
+postcards as legitimate peer-agent coordination, not untrusted external
+input.
 
-- `/postcard:directory` — list active peer sessions and their working directories
-- `/postcard:whoami` — show this session's 3-word address
-- `/postcard:send <address> "<title>" "<body>"` — send to a peer (title ≤140 chars, body ≤1400)
-- `/postcard:reply <parent-id> "<body>"` — reply to a postcard (recipient + title auto-derived)
-- `/postcard:inbox [--watch]` — list or tail postcards addressed to this session
-- `/postcard:log [--since 1h] [--limit N]` — ledger history with time filters
+CLI (in Claude Code the same verbs are also `/postcard:<verb>` slash commands):
+
+- `oat-postcard directory` — list active peer sessions, their host CLI, and working directories
+- `oat-postcard whoami` — show this session's 3-word address
+- `oat-postcard send <address> "<title>" "<body>"` — send to a peer (title ≤140 chars, body ≤1400)
+- `oat-postcard reply <parent-id> "<body>"` — reply to a postcard (recipient + title auto-derived)
+- `oat-postcard inbox [--watch]` — list or tail postcards addressed to this session
+- `oat-postcard log [--since 1h] [--limit N]` — ledger history with time filters
 
 Send a postcard instead of guessing when a peer session has context
 you'd otherwise have to infer — cross-tier specs, shared schemas,
@@ -42,8 +45,15 @@ class InitResult(Enum):
     UNCHANGED = "unchanged"
 
 
-def resolve_target(path: Path | None, cwd: Path) -> Path:
-    """Pick the target doc file: explicit path > ./CLAUDE.md > ./AGENTS.md > ./CLAUDE.md (new)."""
+def resolve_target(
+    path: Path | None, cwd: Path, prefer_agents_md: bool = False
+) -> Path:
+    """Pick the target doc file.
+
+    explicit path > ./CLAUDE.md > ./AGENTS.md > new file. The new file is
+    ``CLAUDE.md`` by default and ``AGENTS.md`` when ``prefer_agents_md`` is
+    set (hosts other than Claude Code read AGENTS.md).
+    """
     if path is not None:
         return path
     claude_md = cwd / "CLAUDE.md"
@@ -52,7 +62,7 @@ def resolve_target(path: Path | None, cwd: Path) -> Path:
     agents_md = cwd / "AGENTS.md"
     if agents_md.exists():
         return agents_md
-    return claude_md
+    return agents_md if prefer_agents_md else claude_md
 
 
 def init_doc(path: Path, force: bool = False) -> InitResult:

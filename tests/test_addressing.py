@@ -36,3 +36,8 @@ def test_combination_space_at_least_50k():
     n = len(words.WORDS)
     total = n * (n - 1) * (n - 2)
     assert total >= 50_000, f"only {total} combinations"
+
+
+def test_unseeded_addresses_differ_within_one_process():
+    seen = {addressing.generate_address() for _ in range(20)}
+    assert len(seen) > 1

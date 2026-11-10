@@ -9,6 +9,8 @@ from pathlib import Path
 
 from . import paths
 
+UNKNOWN_HOST = "unknown"
+
 
 @dataclass
 class Entry:
@@ -17,6 +19,7 @@ class Entry:
     pid: int
     cwd: str
     started_at: str
+    host: str = UNKNOWN_HOST
 
 
 def _entry_path(address: str) -> Path:
@@ -45,7 +48,19 @@ def _pid_alive(pid: int) -> bool:
         return True
 
 
-def register(address: str, session_id: str, pid: int, cwd: Path) -> Entry:
+def _load(data: dict) -> Entry:
+    """Build an Entry, tolerating fields added in later versions."""
+    known = {f for f in Entry.__dataclass_fields__}
+    return Entry(**{k: v for k, v in data.items() if k in known})
+
+
+def register(
+    address: str,
+    session_id: str,
+    pid: int,
+    cwd: Path,
+    host: str = UNKNOWN_HOST,
+) -> Entry:
     paths.ensure_root()
     entry = Entry(
         address=address,
@@ -53,6 +68,7 @@ def register(address: str, session_id: str, pid: int, cwd: Path) -> Entry:
         pid=pid,
         cwd=str(cwd),
         started_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        host=host,
     )
     _write_atomic(_entry_path(address), asdict(entry))
     return entry
@@ -68,9 +84,9 @@ def resolve(address: str) -> Entry | None:
         return None
     try:
         data = json.loads(p.read_text())
-    except (json.JSONDecodeError, OSError):
+        return _load(data)
+    except (json.JSONDecodeError, OSError, TypeError):
         return None
-    return Entry(**data)
 
 
 def is_active(address: str) -> bool:
@@ -83,7 +99,7 @@ def list_active(prune: bool = True) -> list[Entry]:
     for p in sorted(paths.DIRECTORY_DIR.glob("*.json")):
         try:
             data = json.loads(p.read_text())
-            e = Entry(**data)
+            e = _load(data)
         except (json.JSONDecodeError, OSError, TypeError):
             continue
         if not _pid_alive(e.pid):

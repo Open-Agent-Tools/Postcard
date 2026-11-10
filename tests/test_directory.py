@@ -25,3 +25,52 @@ def test_unregister(tmp_root):
     directory.register("x", session_id="s", pid=1, cwd=Path("/tmp"))
     directory.unregister("x")
     assert directory.resolve("x") is None
+
+
+def test_register_records_host_and_defaults_to_unknown(tmp_root):
+    directory.register("h", session_id="s", pid=1, cwd=Path("/tmp"), host="codex")
+    assert directory.resolve("h").host == "codex"
+    directory.register("u", session_id="s2", pid=1, cwd=Path("/tmp"))
+    assert directory.resolve("u").host == directory.UNKNOWN_HOST
+
+
+def test_pre_0_5_entry_without_host_still_loads(tmp_root):
+    import json
+
+    from oat_postcard import paths
+
+    (paths.DIRECTORY_DIR / "old.json").write_text(
+        json.dumps(
+            {
+                "address": "old",
+                "session_id": "s-old",
+                "pid": 1,
+                "cwd": "/tmp",
+                "started_at": "2026-01-01T00:00:00+00:00",
+            }
+        )
+    )
+    e = directory.resolve("old")
+    assert e is not None and e.host == directory.UNKNOWN_HOST
+    assert "old" in {x.address for x in directory.list_active()}
+
+
+def test_entry_with_unknown_future_field_is_tolerated(tmp_root):
+    import json
+
+    from oat_postcard import paths
+
+    (paths.DIRECTORY_DIR / "new.json").write_text(
+        json.dumps(
+            {
+                "address": "new",
+                "session_id": "s-new",
+                "pid": 1,
+                "cwd": "/tmp",
+                "started_at": "2026-01-01T00:00:00+00:00",
+                "host": "claude",
+                "from_the_future": True,
+            }
+        )
+    )
+    assert directory.resolve("new") is not None

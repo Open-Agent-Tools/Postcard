@@ -17,6 +17,22 @@ def tmp_root(tmp_path, monkeypatch):
     yield root
 
 
+@pytest.fixture(autouse=True)
+def _isolate_host_env(monkeypatch):
+    """Host detection reads these; the developer's own shell must not leak in."""
+    for var in (
+        "OAT_POSTCARD_SESSION",
+        "CLAUDECODE",
+        "CODEX_SESSION_ID",
+        "CODEX_THREAD_ID",
+        "GROK_SESSION_ID",
+        "GROK_HOOK_EVENT",
+        "COPILOT_HOOK_DEPTH",
+        "OAT_POSTCARD_HOME",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+
 @pytest.fixture
 def session_env(monkeypatch):
     monkeypatch.setenv("CLAUDE_SESSION_ID", "test-session-A")
