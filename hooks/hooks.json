@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh session-start --host auto",
             "timeout": 10
           }
         ]
@@ -16,8 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-end.sh",
-            "timeout": 10
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh session-end --host auto",
+            "timeout": 3
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/clerk-hook.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh stop --host auto",
             "timeout": 15
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/user-prompt-hook.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh prompt --host auto",
             "timeout": 10
           }
         ]

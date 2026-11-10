@@ -1,0 +1,19 @@
+{
+  "postcard": {
+    "enabled": true,
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "./scripts/hook.sh session-start --host agy",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "./scripts/hook.sh stop --host agy",
+        "timeout": 15
+      }
+    ]
+  }
+}

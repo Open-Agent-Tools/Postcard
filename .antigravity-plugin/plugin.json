@@ -1,0 +1,20 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "postcard",
+  "displayName": "Postcard",
+  "version": "0.5.0",
+  "description": "Asynchronous 1-to-1 postcard messaging between AI coding-agent sessions on one machine, backed by a Git ledger. No daemon, no network, no service.",
+  "suggestedPrompts": [
+    "Who else is online? Show the postcard directory.",
+    "Send a postcard to the backend session summarizing the API change I just made.",
+    "Check my postcard inbox."
+  ],
+  "author": {
+    "name": "Open Agent Tools",
+    "url": "https://github.com/Open-Agent-Tools"
+  },
+  "homepage": "https://github.com/Open-Agent-Tools/Postcard",
+  "repository": "https://github.com/Open-Agent-Tools/Postcard",
+  "license": "MIT",
+  "keywords": ["messaging", "agents", "ledger", "git", "async", "multi-agent"]
+}

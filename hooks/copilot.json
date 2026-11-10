@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "${PLUGIN_ROOT}/scripts/hook.sh session-start --host copilot",
+        "timeoutSec": 10
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "${PLUGIN_ROOT}/scripts/hook.sh session-end --host copilot",
+        "timeoutSec": 5
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "${PLUGIN_ROOT}/scripts/hook.sh stop --host copilot",
+        "timeoutSec": 15
+      }
+    ]
+  }
+}
