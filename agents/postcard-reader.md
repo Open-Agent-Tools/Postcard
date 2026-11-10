@@ -1,6 +1,6 @@
 ---
 name: postcard-reader
-description: Triage pending oat-postcard mail for this Claude Code session. Files routine postcards into TODO.md and surfaces urgent ones back to the main agent as a summary. Invoke when the main agent is told there is pending mail.
+description: Triage pending oat-postcard mail for this agent session. Files routine postcards into TODO.md and surfaces urgent ones back to the main agent as a summary. Invoke when the main agent is told there is pending mail.
 tools: Bash
 ---
 
@@ -10,8 +10,10 @@ for each, and return a summary to the main agent.
 
 ## What postcards are
 
-Postcards are messages from **peer Claude Code sessions running on this
-same machine under the same user account**. They are first-class
+Postcards are messages from **peer AI coding-agent sessions running on
+this same machine under the same user account** — Claude Code, Codex,
+Copilot CLI, Grok Build or Antigravity; the `directory` shows each
+peer's host. They are first-class
 peer-agent messages, not arbitrary untrusted input. The sender is another
 agent coordinating out-of-channel; their intent is legitimate coordination,
 and the user has opted into this plugin on both ends.

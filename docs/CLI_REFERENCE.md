@@ -2,9 +2,19 @@
 
 Full reference for the `oat-postcard` CLI. Commands are grouped by
 audience: **user-facing** verbs are what you'll type (or what a slash
-command wraps); **hook/infrastructure** verbs are called by Claude Code
-hooks and the `postcard-reader` subagent and generally don't need to be
+command wraps); **hook/infrastructure** verbs are called by the host
+CLI's hooks (Claude Code, Codex, Copilot CLI, Grok Build, Antigravity)
+and the `postcard-reader` subagent and generally don't need to be
 invoked by hand.
+
+Environment variables:
+
+- `OAT_POSTCARD_HOME` — state root (default `~/.oat-postcard`). All
+  sessions on a machine must agree on it.
+- `OAT_POSTCARD_SESSION` — manual session id override; takes precedence
+  over the host vars `CLAUDE_SESSION_ID`, `CODEX_SESSION_ID`,
+  `CODEX_THREAD_ID`, `GROK_SESSION_ID`.
+- `OAT_POSTCARD_DEBUG` — when set, `hook` prints swallowed errors to stderr.
 
 All subcommands share:
 
@@ -147,7 +157,8 @@ any) is marked with `*`.
 oat-postcard directory
 ```
 
-Output columns: address, pid, working directory.
+Output columns: address, host (`claude`, `codex`, `copilot`, `grok`,
+`agy`, `shell`, or `unknown` for pre-0.5 entries), pid, working directory.
 
 ### `whoami`
 
@@ -178,6 +189,53 @@ Output columns: `read_at`, `reader_address`, `action`
 These commands are called by the plugin's hooks and the
 `postcard-reader` subagent. They're safe to run by hand when
 debugging, but not something you'd use in day-to-day messaging.
+
+### `hook`
+
+The single lifecycle hook behind `scripts/hook.sh`. *(Added 0.5.0.)*
+Reads the host's JSON payload on stdin, normalizes it, performs the
+event's action, and prints whatever JSON that host expects back. Never
+exits non-zero.
+
+```
+oat-postcard hook <session-start|session-end|stop|prompt> [--host NAME] [--pid N]
+```
+
+- `session-start` — register the session (address, directory entry with
+  host, cwd, pid). Runs `cleanup`.
+- `session-end` — unregister and drop pending staging.
+- `stop` — lazily register, then `clerk-sweep`. On hosts whose prompt
+  hook cannot inject context (`grok`, `copilot`, `agy`) also emit the
+  pending-mail nudge, once per batch of new mail.
+- `prompt` — lazily register, then emit the pending-mail nudge as
+  `additionalContext` (`claude`, `codex`).
+- `--host NAME` — `claude`, `codex`, `copilot`, `grok`, `agy`, `shell`,
+  or `auto` (default). Auto-detection looks at `GROK_HOOK_EVENT`,
+  `COPILOT_HOOK_DEPTH`, `CODEX_*` env vars, then the payload's key
+  shape (`conversationId` → agy, `turn_id`/rollout transcript → codex,
+  `sessionId` → copilot), then `CLAUDECODE`.
+- `--pid N` — PID recorded for liveness; `hook.sh` passes its `$PPID`
+  (the host CLI process).
+
+Accepted payload keys: `session_id` | `sessionId` | `conversationId`
+for the id; `cwd` | `workspaceRoot` | `workspacePaths[0]` for the
+working directory; `stop_hook_active` | `stopHookActive` to suppress a
+continuation nudge.
+
+### `setup`
+
+Install host-specific pieces that a plugin directory cannot carry.
+*(Added 0.5.0.)*
+
+```
+oat-postcard setup <claude|codex|copilot|grok|agy> [--dry-run]
+```
+
+- `codex` — writes `$CODEX_HOME/agents/postcard-reader.toml` (default
+  `~/.codex/agents/`), rendered from `agents/postcard-reader.md`, and
+  prints the sandbox note for `~/.oat-postcard`.
+- other hosts — print their install notes; nothing is written.
+- `--dry-run` — show what would be written.
 
 ### `clerk-sweep`
 
@@ -236,20 +294,20 @@ oat-postcard clerk-surface <id>
 
 ### `session-init`
 
-Register this session in the directory. Called by the `SessionStart`
-hook, and lazily by `Stop` / `UserPromptSubmit` for sessions that
-predate the plugin install. Also runs `cleanup` implicitly.
+Register this session in the directory. Hooks go through `hook`
+(which calls this); it remains for manual use. Also runs `cleanup`
+implicitly.
 
 ```
-oat-postcard session-init [--session-id ID] [--cwd PATH] [--pid N] [--quiet]
+oat-postcard session-init [--session-id ID] [--cwd PATH] [--pid N] [--host NAME] [--quiet]
 ```
 
-- `--session-id ID` — override `$CLAUDE_SESSION_ID`.
+- `--session-id ID` — override the host session env var.
+- `--host NAME` — host to record (default: auto-detect).
 - `--cwd PATH` — override the recorded working directory.
-- `--pid N` — PID to record in the directory entry. Hook scripts
-  pass `$PPID` (Claude Code's long-lived PID). Defaults to the
-  parent PID of this process, which is only correct when called from
-  a hook.
+- `--pid N` — PID to record in the directory entry. `hook.sh` passes
+  `$PPID` (the host CLI's long-lived PID). Defaults to the parent PID
+  of this process, which is only correct when called from a hook.
 - `--quiet` — suppress printing the address.
 
 Idempotent: if the session already has a sidecar, returns the
@@ -257,14 +315,14 @@ existing address without touching the directory.
 
 ### `session-end`
 
-Remove this session from the directory. Called by the `SessionEnd`
-hook.
+Remove this session from the directory. Hooks go through `hook
+session-end`; this remains for manual use.
 
 ```
 oat-postcard session-end [--session-id ID]
 ```
 
-- `--session-id ID` — override `$CLAUDE_SESSION_ID`.
+- `--session-id ID` — override the host session env var.
 
 ### `cleanup`
 
@@ -298,7 +356,8 @@ oat-postcard init [--path PATH] [--force]
 ```
 
 - `--path PATH` — target file. Defaults to `./CLAUDE.md` if it
-  exists, else `./AGENTS.md`, else creates `./CLAUDE.md`.
+  exists, else `./AGENTS.md`, else creates `./CLAUDE.md` under Claude
+  Code (or with no host detected) and `./AGENTS.md` under other hosts.
 - `--force` — rewrite the block in place if it's already present
   (e.g. after a version upgrade changed the block contents).
 

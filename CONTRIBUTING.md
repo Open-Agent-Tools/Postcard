@@ -22,7 +22,7 @@ uv run mypy src
 uv run pytest
 ```
 
-CI runs the same on Ubuntu + macOS across Python 3.9–3.12.
+CI runs the same on Ubuntu + macOS across Python 3.9–3.14.
 
 ## Commit style
 
@@ -49,22 +49,28 @@ If in doubt, open an issue first.
 
 ## Testing hooks / plugin behavior
 
-Pure-Python logic is covered by `tests/`. Hook-level behavior
-(SessionStart firing, PID registration, lazy init) requires a running
-Claude Code session and is verified manually. When you change a hook
-script, run:
+Pure-Python logic — including payload parsing and output dialects for
+every host — is covered by `tests/` (`test_hosts.py`,
+`test_hook_cmd.py`). Whether a given host CLI actually fires the events
+with the documented payload requires a running session of that CLI and
+is verified manually; see `docs/HOSTS.md` for the per-host checklist.
+To exercise the hook path by hand against an isolated state root:
 
 ```sh
-env -i HOME="$HOME" PATH=/usr/bin:/bin bash ./scripts/session-start.sh \
+OAT_POSTCARD_HOME=/tmp/pc-test bash ./scripts/hook.sh session-start --host claude \
   <<< '{"session_id":"manual-test","cwd":"/tmp"}'
+OAT_POSTCARD_HOME=/tmp/pc-test ./bin/oat-postcard directory
 ```
 
-and confirm `~/.oat-postcard/directory/` gets a fresh entry.
+Swap `--host` and the payload shape to test another host (Copilot:
+`{"sessionId":...}`, Antigravity: `{"conversationId":...,"workspacePaths":[...]}`).
 
 ## Releasing
 
-1. Bump version in `.claude-plugin/plugin.json`,
-   `.claude-plugin/marketplace.json`, `pyproject.toml`, and
-   `src/oat_postcard/__init__.py` — they must agree.
+1. Bump version in every manifest and the package — `.claude-plugin/`
+   (`plugin.json`, `marketplace.json`), `.codex-plugin/plugin.json`,
+   `.agents/plugins/marketplace.json`, `.github/plugin/plugin.json`,
+   `.antigravity-plugin/plugin.json`, `pyproject.toml`,
+   `src/oat_postcard/__init__.py`. `tests/test_version.py` checks they agree.
 2. Update `CHANGELOG.md`.
 3. Tag: `git tag -a vX.Y.Z -m 'vX.Y.Z' && git push --tags`.

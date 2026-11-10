@@ -6,7 +6,7 @@
 
 ## Why postcard
 
-AI agent sessions don't talk to each other. If you're running sperate Claude Code sesisons
+AI agent sessions don't talk to each other. If you're running separate agent sessions
 on three tiers of a web app:
 - one on the frontend
 - one on the backend
@@ -31,6 +31,16 @@ polls, nothing phones home.
 It's the *smallest coordination primitive* that works for agents sharing a
 filesystem but not a process.
 
+## Supported hosts
+
+Postcard runs as a plugin in **Claude Code**, **Codex CLI**, **GitHub
+Copilot CLI**, **Grok Build** and **Google Antigravity CLI** (`agy`).
+Sessions from every host share one directory and one ledger, so a
+Claude session can message a Codex session; `oat-postcard directory`
+shows each peer's host. The Python core is identical everywhere — only
+the hook plumbing differs per host. See [docs/HOSTS.md](docs/HOSTS.md)
+for per-host install steps, sandbox notes and what is still unverified.
+
 ## Install
 
 There are two independent ways to use oat-postcard. They don't
@@ -48,16 +58,38 @@ then
 /plugin install postcard@oat-postcard
 ```
 
-### Use from your teminal shell
+### Use inside Codex, Copilot CLI, Grok Build or Antigravity
 
-Install the **standalone CLI** with `uv`. Puts `oat-postcard` on your user PATH so it works from any terminal. Has no effect on Claude Code. 
+Each host installs the same repository as a plugin; the hooks and the
+`postcard-reader` subagent come along. Short form (details and caveats
+in [docs/HOSTS.md](docs/HOSTS.md)):
+
+```
+codex plugin marketplace add Open-Agent-Tools/Postcard     # then /plugins → install postcard
+oat-postcard setup codex                                   # Codex keeps subagents outside plugins
+
+copilot plugin marketplace add Open-Agent-Tools/Postcard
+copilot plugin install postcard@oat-postcard
+
+grok --plugin-dir /path/to/Postcard                        # or add the marketplace in /plugin
+
+agy plugin install https://github.com/Open-Agent-Tools/Postcard
+```
+
+Only Claude Code puts the plugin's `bin/` on the agent's PATH, so on
+the other hosts also install the standalone CLI below (the skill and
+the nudges call `oat-postcard` by name).
+
+### Use from your terminal shell
+
+Install the **standalone CLI** with `uv`. Puts `oat-postcard` on your user PATH so it works from any terminal. Has no effect on the plugins. 
 ```
 uv tool install git+https://github.com/Open-Agent-Tools/Postcard.git
 ```
 
 Install both if you want slash commands **and** a terminal CLI — they
-share the same on-disk state (`~/.oat-postcard/`), so postcards sent
-from one path are visible to the other.
+share the same on-disk state (`~/.oat-postcard/`, or `$OAT_POSTCARD_HOME`),
+so postcards sent from one path are visible to the other.
 
 Requires Python 3.9+ and git available on the machine (macOS's default
 `/usr/bin/python3` works).
@@ -103,8 +135,9 @@ claude --plugin-dir /path/to/Postcard
 
 ## Example
 
-Three Claude Code sessions running on the same machine — one on each
-tier of a web app: the React frontend, the FastAPI backend, and the
+Three agent sessions running on the same machine — one on each tier
+of a web app: a Claude Code session on the React frontend, a Codex
+session on the FastAPI backend, and a Copilot CLI session on the
 Postgres schema. Each gets an auto-generated 3-word address at startup.
 
 **Session A** (frontend) is wiring up a user profile page and needs the
@@ -115,9 +148,9 @@ shape of the backend response:
 → swift-amber-compass
 
 /directory
-→ * swift-amber-compass  pid=54321  /Users/you/app/web
-→   bright-jade-engine    pid=54789  /Users/you/app/api
-→   quiet-copper-reef     pid=55012  /Users/you/app/db
+→ * swift-amber-compass  claude   pid=54321  /Users/you/app/web
+→   bright-jade-engine    codex    pid=54789  /Users/you/app/api
+→   quiet-copper-reef     copilot  pid=55012  /Users/you/app/db
 
 /send bright-jade-engine "GET /api/users/:id shape" "Building the
 profile page. What does GET /api/users/:id return? Specifically, is
@@ -125,10 +158,10 @@ avatar_url nullable, and are timestamps ISO strings or epoch seconds?"
 → sent 8c4a1f03 to bright-jade-engine
 ```
 
-**Session B** (backend) finishes its current turn. The Stop hook sweeps
-the postcard into pending staging. On Session B's next prompt, the
-UserPromptSubmit hook injects an "N pending postcards" notice, and the
-main agent delegates to the `postcard-reader` subagent. The subagent
+**Session B** (backend, Codex) finishes its current turn. The Stop hook
+sweeps the postcard into pending staging. On Session B's next prompt,
+the UserPromptSubmit hook injects an "N pending postcards" notice, and
+the main agent delegates to the `postcard-reader` subagent. The subagent
 judges the postcard urgent (direct blocking question) and returns:
 
 > Filed 0 to TODO. Surfaced 1 urgent.
@@ -175,7 +208,8 @@ New to a project? Run `/postcard:onboard` inside Claude Code. It
 gives a short tour, appends a coordination hint to your project's
 `CLAUDE.md` (or `AGENTS.md`) so future agents in that project will
 reach for postcards proactively, and shows your current address and
-who else is active.
+who else is active. On other hosts run `oat-postcard init` directly;
+it writes `AGENTS.md` when the project has neither file.
 
 For non-interactive use, `oat-postcard init` does the persistence step
 alone and is idempotent (re-running is a no-op; `--force` rewrites).
@@ -192,16 +226,21 @@ alone and is idempotent (re-running is a no-op; `--force` rewrites).
 
 Cleanup runs automatically at the start of every session (via
 `session-init`), so a crashed or abandoned session is reaped the next
-time any Claude Code session starts. It can also be run manually.
+time any session on any host starts. It can also be run manually.
 
 ## Session identity
 
-The CLI keys sessions by `$CLAUDE_SESSION_ID` (set by Claude Code) with
-fall-back to `tty:$(tty)` for standalone terminal use. The SessionStart
+Hooks receive the session id in the host's payload (`session_id`,
+`sessionId` or `conversationId`) and register it. From agent shells the
+CLI keys sessions by the host's env var — `CLAUDE_SESSION_ID`,
+`CODEX_SESSION_ID` / `CODEX_THREAD_ID`, `GROK_SESSION_ID`, or the manual
+`OAT_POSTCARD_SESSION` — then by walking the process tree to a registered
+PID, then by `tty:$(tty)` for standalone terminal use. The session-start
 hook generates a 3-word address, writes
 `~/.oat-postcard/sessions/<session-id>.addr`, and registers the session in
-`~/.oat-postcard/directory/<address>.json`. SessionEnd unregisters. Stale
-entries (dead PIDs) are pruned on every `directory` read.
+`~/.oat-postcard/directory/<address>.json` together with its host. The
+session-end hook unregisters. Stale entries (dead PIDs) are pruned on
+every `directory` read.
 
 ## Incoming mail flow (Clerk)
 
@@ -209,14 +248,17 @@ The Clerk is a subagent, not a hook — the hooks only raise the flag.
 
 1. Sender calls `oat-postcard send <addr> ...` → ledger commit + hardlink
    into `~/.oat-postcard/inbox/<recipient>/`.
-2. After every turn on the recipient's session, the **Stop hook** runs
-   `clerk-sweep`, moving inbox files into
+2. After every turn on the recipient's session, the **turn-end hook**
+   (`Stop` / `agentStop`) sweeps inbox files into
    `~/.oat-postcard/pending/<session>/` (per-session staging).
-3. On the recipient's next user turn, the **UserPromptSubmit hook** checks
-   `clerk-pending --count`. If > 0, it emits `additionalContext` telling
-   the main agent: "invoke the postcard-reader subagent".
-4. The main agent uses the Task tool (`subagent_type: postcard-reader`).
-   The subagent:
+3. The host is told there is mail. In Claude Code and Codex the
+   **UserPromptSubmit hook** emits `additionalContext` on the next user
+   turn: "invoke the postcard-reader subagent". Copilot CLI, Grok Build
+   and Antigravity cannot inject context from a prompt hook, so there
+   the turn-end hook emits the notice as a continuation of the turn
+   (once per batch of new mail).
+4. The main agent delegates to the subagent (Claude Code: Task tool with
+   `subagent_type: postcard:postcard-reader`). The subagent:
    - Runs `clerk-pending --json` to list staged mail.
    - For each postcard, chooses **file to TODO** (`clerk-file <id>`) for
      routine mail, or **surface** (`clerk-surface <id>` + include in

@@ -2,6 +2,58 @@
 
 All notable changes to oat-postcard. Dates are UTC.
 
+## [0.5.0] - 2026-11-10
+
+### Added
+- **Multi-host support.** The plugin now installs into Codex CLI, GitHub
+  Copilot CLI, Grok Build and Google Antigravity CLI (`agy`) as well as
+  Claude Code, and sessions from all of them share one directory and
+  ledger. New per-host manifests: `.codex-plugin/plugin.json` +
+  `.agents/plugins/marketplace.json`, `.github/plugin/plugin.json` (with
+  `hooks/copilot.json` in Copilot's hook schema), and
+  `.antigravity-plugin/plugin.json` (with a root `hooks.json` in
+  Antigravity's schema). See `docs/HOSTS.md`.
+- `oat-postcard hook <session-start|session-end|stop|prompt> [--host]`:
+  one host-agnostic lifecycle hook that normalizes every host's stdin
+  payload (`session_id` / `sessionId` / `conversationId`, `cwd` /
+  `workspacePaths[0]`) and emits that host's output dialect. Replaces
+  the four shell scripts with `scripts/hook.sh`.
+- `oat-postcard setup <host>`: installs host-specific pieces a plugin
+  cannot carry — for Codex, the `postcard-reader` subagent as
+  `~/.codex/agents/postcard-reader.toml` (rendered from
+  `agents/postcard-reader.md`). Other hosts print their install notes.
+- `directory` shows a host column; directory entries record `host`.
+  Pre-0.5 entries without the field still load.
+- Session id resolution reads `CODEX_SESSION_ID`, `CODEX_THREAD_ID` and
+  `GROK_SESSION_ID` in addition to `CLAUDE_SESSION_ID`;
+  `OAT_POSTCARD_SESSION` (manual override) now takes precedence.
+- `OAT_POSTCARD_HOME` overrides the `~/.oat-postcard` state root, for
+  hosts whose sandbox cannot write to the home directory.
+- `src/oat_postcard/hosts.py` holds all host-specific knowledge.
+- `tests/test_version.py` asserts every manifest agrees on the version.
+
+### Changed
+- Pending-mail nudges: hosts whose per-prompt hook cannot inject context
+  (Grok, Copilot, Antigravity) receive the notice from the turn-end hook
+  as a continuation (`Stop` `additionalContext`, `agentStop`
+  `decision: block`, `Stop` `decision: continue` respectively), emitted
+  once per batch of new mail and never while the host's stop-hook guard
+  is active. Claude Code and Codex behavior is unchanged.
+- `init` creates `AGENTS.md` (rather than `CLAUDE.md`) when a project has
+  neither file and the session is not running under Claude Code.
+  Existing files are still preferred in the old order.
+- Wording in the skill, the `postcard-reader` subagent, the `init`
+  block and the docs no longer assumes every peer is a Claude Code
+  session.
+- `hooks/hooks.json` SessionEnd timeout lowered to 3s (Codex caps it there).
+
+### Fixed
+- Address generation was seeded from the process PID, so two sessions
+  registered from the same process could never get distinct addresses
+  and `init_session`'s collision-retry loop was a no-op. Addresses now
+  come from `random.SystemRandom`. Harmless on Claude Code (one process
+  per hook), relevant for hosts that run several sessions per process.
+
 ## [0.4.1] - 2026-04-24
 
 ### Fixed
