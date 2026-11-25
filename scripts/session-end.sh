@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# SessionEnd hook: remove this session from the global directory.
 set -eo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"

@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# Stop hook (post-turn): sweep this session's inbox into pending staging.
-# Silent on success; the UserPromptSubmit hook tells the main agent
-# about pending mail on the next user turn.
-#
-# Also lazily registers the session if SessionStart never fired (e.g.
-# the plugin was installed into an already-running Claude Code session).
 set -eo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"

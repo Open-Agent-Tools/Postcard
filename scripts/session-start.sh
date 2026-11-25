@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# SessionStart hook: generate this session's 3-word address and register it.
-# Claude Code pipes a JSON payload on stdin with session_id + cwd.
 set -eo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"

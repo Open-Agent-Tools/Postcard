@@ -124,7 +124,6 @@ def test_postcard_loads_without_reply_to_field(tmp_root):
     import json as _json
 
     ledger.init_ledger()
-    # Simulate a pre-0.3.0 record: write JSON without reply_to, then commit
     from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc)

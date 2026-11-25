@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# UserPromptSubmit hook: if this session has pending postcards, inject
-# additionalContext so the main agent invokes the postcard-reader subagent.
-#
-# Also lazily registers the session if SessionStart never fired.
 set -eo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
