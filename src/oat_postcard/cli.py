@@ -167,8 +167,6 @@ def _cmd_log(args: argparse.Namespace) -> int:
             break
 
     if args.watch:
-        # Tail mode: print initial window oldest-first so new arrivals
-        # stream on naturally at the bottom.
         filtered.reverse()
 
     if not filtered:
@@ -186,8 +184,6 @@ def _cmd_log(args: argparse.Namespace) -> int:
         while True:
             time.sleep(args.interval)
             current = ledger.log()
-            # ledger.log() returns newest-first; reverse to stream
-            # chronologically.
             for pc in reversed(current):
                 if pc.id in seen:
                     continue

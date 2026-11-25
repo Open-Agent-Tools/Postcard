@@ -104,11 +104,8 @@ def test_inbox_cmd_shows_reply_marker(tmp_root, session_env, capsys):
 
 
 def test_log_watch_prints_new_arrivals(tmp_root, session_env, capsys, monkeypatch):
-    # Seed one postcard already in the ledger.
     ledger.send("alpha", "bravo", "seeded", "body")
 
-    # Stub time.sleep to inject a new postcard on the first poll and
-    # raise KeyboardInterrupt on the second so the watch loop exits.
     calls = {"n": 0}
 
     def fake_sleep(_interval):
@@ -128,8 +125,6 @@ def test_log_watch_prints_new_arrivals(tmp_root, session_env, capsys, monkeypatc
 
 
 def test_log_watch_tails_across_all_senders(tmp_root, session_env, capsys, monkeypatch):
-    # Unlike inbox, log --watch is unfiltered: it shows postcards to
-    # anyone, not just this session.
     calls = {"n": 0}
 
     def fake_sleep(_interval):
@@ -173,8 +168,6 @@ def test_log_watch_with_since_prints_window_then_tails(
 def test_log_watch_empty_ledger_suppresses_empty_marker(
     tmp_root, session_env, capsys, monkeypatch
 ):
-    # Ensure the "(ledger empty)" / "(no matching postcards)" sentinel
-    # does not print when we're about to tail.
     def fake_sleep(_interval):
         raise KeyboardInterrupt
 
@@ -238,7 +231,6 @@ def test_send_rejects_dead_address(tmp_root, session_env, capsys):
     assert "not in the live directory" in err
     assert "'ghost-dead-address'" in err
     assert "--force" in err
-    # No postcard should have been written
     assert ledger.log() == []
 
 
@@ -253,7 +245,6 @@ def test_send_force_bypasses_dead_address_check(tmp_root, session_env, capsys):
 
 def test_reply_rejects_dead_parent_sender(tmp_root, session_env, capsys):
     me = session.init_session()
-    # Parent came from a peer who is no longer in the directory
     parent = ledger.send("ghost-peer", me, "parent", "body")
     rc = cli.main(["reply", parent.id[:8], "acknowledged"])
     assert rc == 1
